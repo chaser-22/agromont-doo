@@ -116,63 +116,27 @@ a {
   gap: 12px;
 }
 
-.brand-symbol {
+.brand-logo-frame {
   position: relative;
-  display: grid;
-  width: 47px;
-  height: 47px;
+  display: block;
+  width: 102px;
+  height: 66px;
   flex: 0 0 auto;
-  place-items: center;
   overflow: hidden;
-  color: var(--ink);
-  background: var(--amber);
-  border-radius: 50% 50% 44% 44%;
-  box-shadow: inset 0 -9px 0 rgba(53, 90, 65, 0.45);
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
 }
 
-.brand-symbol::after {
+.brand-logo-image {
   position: absolute;
-  bottom: 7px;
-  left: 5px;
-  width: 37px;
-  height: 1px;
-  content: "";
-  background: var(--paper-bright);
-  box-shadow: 0 -4px 0 rgba(255, 255, 255, 0.45);
-  transform: rotate(-8deg);
-}
-
-.brand-symbol span {
-  position: relative;
-  z-index: 1;
-  font-size: 11px;
-  font-weight: 900;
-  letter-spacing: -0.05em;
-}
-
-.brand-copy {
-  display: flex;
-  flex-direction: column;
-}
-
-.brand-copy strong {
-  font-size: 21px;
-  font-weight: 800;
-  letter-spacing: -0.065em;
-  line-height: 1;
-}
-
-.brand-copy strong i {
-  color: var(--amber);
-  font-style: normal;
-}
-
-.brand-copy small {
-  margin-top: 5px;
-  font-size: 8px;
-  font-weight: 700;
-  letter-spacing: 0.17em;
-  text-transform: uppercase;
+  top: 0;
+  left: 0;
+  width: 211px !important;
+  max-width: none !important;
+  height: auto !important;
+  transform: translate(-62px, -101px);
+  filter: saturate(1.04) contrast(1.03);
 }
 
 .desktop-nav {
@@ -1308,8 +1272,22 @@ a {
 }
 
 .contact-form {
+  position: relative;
   padding: 3vw;
   background: var(--paper-bright);
+}
+
+.contact-form .website-field {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  margin: -1px !important;
+  padding: 0 !important;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0 !important;
 }
 
 .field-row {
@@ -1383,12 +1361,35 @@ a {
 }
 
 .form-success {
+  display: flex;
   margin: 22px 0 0;
   padding: 14px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
   color: white;
   background: var(--green);
   font-size: 10px;
   line-height: 1.5;
+}
+
+.form-success p {
+  margin: 0;
+}
+
+.form-success a {
+  display: inline-flex;
+  min-height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 18px;
+  padding: 0 14px;
+  color: var(--ink);
+  background: var(--amber);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .footer {
@@ -1412,6 +1413,16 @@ a {
   font-size: 22px;
   line-height: 1.4;
   text-align: right;
+}
+
+.footer .brand-logo-frame {
+  width: 132px;
+  height: 88px;
+}
+
+.footer .brand-logo-image {
+  width: 280px !important;
+  transform: translate(-83px, -134px);
 }
 
 .footer-links {
@@ -1564,9 +1575,8 @@ a {
     padding-left: max(20px, env(safe-area-inset-left));
   }
   .site-header.is-scrolled { height: 66px; }
-  .brand-symbol { width: 40px; height: 40px; }
-  .brand-copy strong { font-size: 18px; }
-  .brand-copy small { display: none; }
+  .brand-logo-frame { width: 96px; height: 62px; }
+  .brand-logo-image { width: 202px !important; transform: translate(-59px, -97px); }
   .menu-toggle { width: 44px; height: 44px; }
   .mobile-menu {
     padding-right: max(20px, env(safe-area-inset-right));
@@ -1617,6 +1627,8 @@ a {
   .field-row { grid-template-columns: 1fr; gap: 0; }
   .form-bottom { grid-template-columns: 1fr; }
   .form-bottom .button { width: 100%; }
+  .form-success { align-items: stretch; flex-direction: column; }
+  .form-success a { justify-content: space-between; }
   .footer { padding-right: 20px; padding-left: 20px; }
   .footer-top { align-items: start; flex-direction: column; gap: 35px; }
   .footer-top p { font-size: 19px; text-align: left; }

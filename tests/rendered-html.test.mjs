@@ -1,21 +1,14 @@
 import assert from "node:assert/strict";
-import { access, readFile, readdir } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
-const developmentPreviewMeta =
-  /<meta(?=[^>]*\bname=["']codex-preview["'])(?=[^>]*\bcontent=["']development["'])[^>]*>/i;
-const templateRoot = new URL("../", import.meta.url);
-const previewRoot = new URL("../app/_sites-preview/", import.meta.url);
-
-async function render() {
+async function invoke(url = "http://localhost:3005/", init = {}) {
   const workerUrl = new URL("../dist/server/index.js", import.meta.url);
   workerUrl.searchParams.set("test", `${process.pid}-${Date.now()}`);
   const { default: worker } = await import(workerUrl.href);
 
   return worker.fetch(
-    new Request("http://localhost/", {
-      headers: { accept: "text/html" },
-    }),
+    new Request(url, init),
     {
       ASSETS: {
         fetch: async () => new Response("Not found", { status: 404 }),
@@ -28,64 +21,74 @@ async function render() {
   );
 }
 
-test("server-renders the starter loading skeleton", async () => {
+function render(url = "http://localhost:3005/") {
+  return invoke(url, { headers: { accept: "text/html" } });
+}
+
+test("server-renders the Agromont site with a nonce-protected CSP", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
+  assert.equal(response.headers.get("x-content-type-options"), "nosniff");
+  assert.equal(response.headers.get("x-frame-options"), "DENY");
+  assert.equal(response.headers.get("referrer-policy"), "strict-origin-when-cross-origin");
+
+  const csp = response.headers.get("content-security-policy") ?? "";
+  const nonce = csp.match(/'nonce-([a-f0-9]+)'/)?.[1];
+  assert.ok(nonce, "CSP should include a per-response nonce");
+  assert.match(csp, /frame-ancestors 'none'/);
+  assert.match(csp, /object-src 'none'/);
+  assert.match(csp, /base-uri 'self'/);
+  assert.match(csp, /style-src [^;]*https:\/\/fonts\.googleapis\.com/);
+  assert.match(csp, /font-src [^;]*https:\/\/fonts\.gstatic\.com/);
 
   const html = await response.text();
-  assert.match(html, developmentPreviewMeta);
-  assert.match(html, /<title>Your site is taking shape<\/title>/i);
-  assert.match(html, /Building your site/);
-  assert.match(html, /Your site is taking shape/);
-  assert.match(
-    html,
-    /Your first version will appear here automatically when it’s ready\./,
-  );
-  assert.doesNotMatch(html, /Codex/);
-  assert.match(html, /react-loading-skeleton/);
-  assert.match(html, /role="status"/);
+  assert.match(html, /<html lang="sr-ME"/);
+  assert.match(html, /<title>AgroMont/);
+  assert.match(html, /%2Fimages%2Fagromont-logo\.jpg/i);
+
+  const scriptTags = [...html.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
+  assert.ok(scriptTags.length > 0, "rendered page should contain hydration scripts");
+  for (const tag of scriptTags) {
+    assert.match(tag, new RegExp(`\\bnonce="${nonce}"`));
+  }
 });
 
-test("keeps the loading skeleton scoped and disposable", async () => {
-  const [preview, css, page, layout, packageJson, files] = await Promise.all([
-    readFile(new URL("SkeletonPreview.tsx", previewRoot), "utf8"),
-    readFile(new URL("preview.css", previewRoot), "utf8"),
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+test("keeps sensitive security decisions server-controlled", async () => {
+  const [worker, layout, page, config] = await Promise.all([
+    readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../package.json", import.meta.url), "utf8"),
-    readdir(previewRoot),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../next.config.ts", import.meta.url), "utf8"),
   ]);
 
-  assert.deepEqual(files.sort(), ["SkeletonPreview.tsx", "preview.css"]);
-  assert.match(preview, /from "react-loading-skeleton"/);
-  assert.match(preview, /baseColor="#eceae7"/);
-  assert.match(preview, /highlightColor="#f9f8f6"/);
-  assert.match(preview, /duration=\{2\.8\}/);
-  assert.match(preview, /sites-skeleton-search-placeholder/);
-  assert.match(packageJson, /"react-loading-skeleton": "3\.5\.0"/);
+  assert.match(worker, /ALLOWED_METHODS/);
+  assert.match(worker, /source\.startsWith\("\/images\/"\)/);
+  assert.match(worker, /Strict-Transport-Security/);
+  assert.match(worker, /Content-Security-Policy/);
+  assert.match(layout, /allowedHosts/);
+  assert.match(layout, /agromont-crna-gora\.ennnyy\.chatgpt\.site/);
+  assert.match(page, /rel="noopener noreferrer"/);
+  assert.match(page, /name="website"/);
+  assert.match(config, /poweredByHeader:\s*false/);
+  assert.match(config, /dangerouslyAllowSVG:\s*false/);
+});
 
-  const shellIndex = preview.indexOf('className="sites-skeleton-shell"');
-  const statusIndex = preview.indexOf('className="sites-skeleton-status"');
-  assert.ok(shellIndex >= 0 && statusIndex > shellIndex);
-  assert.match(css, /position:\s*fixed/);
-  assert.match(css, /inset:\s*0/);
-  assert.match(css, /opacity:\s*0\.52/);
-  assert.match(css, /prefers-reduced-motion:\s*reduce/);
-  assert.doesNotMatch(css, /#020617|canvas|pets|progress/i);
-  assert.doesNotMatch(
-    preview,
-    /loading-spinner|status-mark|status-progress|canvas|cookie|random/i,
-  );
+test("rejects unsupported requests and ignores untrusted hosts", async () => {
+  const [post, options, remoteImage, poisonedHost] = await Promise.all([
+    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/", { method: "POST" }),
+    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/", { method: "OPTIONS" }),
+    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/_vinext/image?url=https%3A%2F%2Fevil.example%2Fx.jpg&w=640&q=75"),
+    render("https://evil.example/"),
+  ]);
 
-  assert.match(page, /export const metadata:\s*Metadata/);
-  assert.match(page, /"codex-preview": "development"/);
-  assert.match(page, /<SkeletonPreview \/>/);
-  assert.match(layout, /title:\s*"Starter Project"/);
-  assert.doesNotMatch(layout, /codex-preview|_sites-preview|themeColor|\bViewport\b/);
-  assert.doesNotMatch(css, /(^|\s)(html|body)\s*\{/m);
+  assert.equal(post.status, 405);
+  assert.equal(post.headers.get("allow"), "GET, HEAD, OPTIONS");
+  assert.equal(options.status, 204);
+  assert.equal(remoteImage.status, 400);
+  assert.equal(poisonedHost.headers.get("strict-transport-security"), "max-age=63072000; includeSubDomains");
 
-  await assert.rejects(
-    access(new URL("public/_sites-preview", templateRoot)),
-  );
+  const poisonedHtml = await poisonedHost.text();
+  assert.doesNotMatch(poisonedHtml, /evil\.example/i);
+  assert.match(poisonedHtml, /https:\/\/agromont-crna-gora\.ennnyy\.chatgpt\.site/i);
 });

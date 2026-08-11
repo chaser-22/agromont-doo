@@ -1,0 +1,4 @@
+Contact: mailto:agromont@agro.co.me
+Expires: 2027-08-11T00:00:00.000Z
+Preferred-Languages: me, en
+Canonical: https://agromont-crna-gora.ennnyy.chatgpt.site/.well-known/security.txt

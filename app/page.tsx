@@ -106,12 +106,16 @@ const locations = [
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <a className={`brand ${compact ? "brand-compact" : ""}`} href="#vrh" aria-label="AgroMont — početna">
-      <span className="brand-symbol" aria-hidden="true">
-        <span>AM</span>
-      </span>
-      <span className="brand-copy">
-        <strong><i>Agro</i>Mont</strong>
-        {!compact && <small>Za domaćinstva koja rastu</small>}
+      <span className="brand-logo-frame" aria-hidden="true">
+        <Image
+          className="brand-logo-image"
+          src="/images/agromont-logo.jpg"
+          alt=""
+          width={1080}
+          height={1350}
+          sizes="(max-width: 760px) 96px, 102px"
+          priority={!compact}
+        />
       </span>
     </a>
   );
@@ -126,6 +130,7 @@ export default function Home() {
   const [activeFilter, setActiveFilter] = useState("sve");
   const [activeLocation, setActiveLocation] = useState("golubovci");
   const [submitted, setSubmitted] = useState(false);
+  const [emailDraft, setEmailDraft] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
 
   const filteredProducts = useMemo(
@@ -178,8 +183,49 @@ export default function Home() {
 
   const submitForm = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const text = (field: string, maxLength: number) =>
+      Array.from(String(data.get(field) ?? ""))
+        .filter((character) => {
+          const code = character.charCodeAt(0);
+          return code >= 32 && code !== 127;
+        })
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, maxLength);
+
+    if (text("website", 80)) return;
+
+    const name = text("name", 80);
+    const company = text("company", 120);
+    const email = text("email", 254);
+    const message = text("message", 1200);
+    const requestedTopic = text("topic", 20);
+    const topics: Record<string, string> = {
+      proizvodi: "Proizvodi i dostupnost",
+      b2b: "B2B saradnja",
+      karijera: "Karijera",
+      ostalo: "Ostalo",
+    };
+    const topic = topics[requestedTopic] ?? topics.ostalo;
+    const subject = `AgroMont upit — ${topic}`;
+    const body = [
+      `Ime i prezime: ${name}`,
+      `Kompanija: ${company || "Nije navedena"}`,
+      `E-mail: ${email}`,
+      `Tema: ${topic}`,
+      "",
+      "Poruka:",
+      message,
+    ].join("\r\n");
+
+    setEmailDraft(
+      `mailto:agromont@agro.co.me?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    );
     setSubmitted(true);
-    event.currentTarget.reset();
+    form.reset();
   };
 
   return (
@@ -427,7 +473,7 @@ export default function Home() {
               <strong>{selectedLocation.type}</strong>
               <p>{selectedLocation.description}</p>
               <div className="location-actions">
-                <a href={`https://www.google.com/maps/search/?api=1&query=AgroMont+${selectedLocation.city}`} target="_blank" rel="noreferrer">Otvori mapu <Arrow /></a>
+                <a href={`https://www.google.com/maps/search/?api=1&query=AgroMont+${selectedLocation.city}`} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Otvori mapu <Arrow /></a>
                 <a href="#kontakt">Provjeri dostupnost</a>
               </div>
             </div>
@@ -441,7 +487,7 @@ export default function Home() {
             <div className="section-label"><span>05</span> Aktuelno</div>
             <h2>Razlog više da svratite.</h2>
           </div>
-          <a className="underline-link" href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noreferrer">Pratite AgroMont <Arrow /></a>
+          <a className="underline-link" href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Pratite AgroMont <Arrow /></a>
         </div>
         <div className="news-grid">
           <article className="news-feature reveal">
@@ -506,33 +552,39 @@ export default function Home() {
             <a href="mailto:agromont@agro.co.me">agromont@agro.co.me <Arrow /></a>
           </div>
         </div>
-        <form className="contact-form reveal" onSubmit={submitForm}>
+        <form className="contact-form reveal" onSubmit={submitForm} acceptCharset="UTF-8">
+          <label className="website-field" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
           <div className="field-row">
-            <label>Ime i prezime<input required name="name" autoComplete="name" placeholder="Vaše ime" /></label>
-            <label>Kompanija<input name="company" autoComplete="organization" placeholder="Naziv kompanije" /></label>
+            <label>Ime i prezime<input required name="name" autoComplete="name" placeholder="Vaše ime" minLength={2} maxLength={80} /></label>
+            <label>Kompanija<input name="company" autoComplete="organization" placeholder="Naziv kompanije" maxLength={120} /></label>
           </div>
           <div className="field-row">
-            <label>E-mail<input required name="email" type="email" autoComplete="email" placeholder="ime@kompanija.me" /></label>
+            <label>E-mail<input required name="email" type="email" autoComplete="email" inputMode="email" placeholder="ime@kompanija.me" maxLength={254} /></label>
             <label>Vrsta upita<select name="topic" defaultValue="proizvodi"><option value="proizvodi">Proizvodi i dostupnost</option><option value="b2b">B2B saradnja</option><option value="karijera">Karijera</option><option value="ostalo">Ostalo</option></select></label>
           </div>
-          <label>Poruka<textarea required name="message" rows={4} placeholder="Opišite šta vam je potrebno…" /></label>
+          <label>Poruka<textarea required name="message" rows={4} placeholder="Opišite šta vam je potrebno…" minLength={10} maxLength={1200} /></label>
           <div className="form-bottom">
-            <label className="consent"><input required type="checkbox" /> <span>Saglasan/na sam da AgroMont obradi podatke radi odgovora na upit.</span></label>
+            <label className="consent"><input required type="checkbox" name="consent" /> <span>Saglasan/na sam da AgroMont obradi podatke radi odgovora na upit.</span></label>
             <button className="button button-dark" type="submit">Pošaljite upit <Arrow /></button>
           </div>
-          {submitted && <p className="form-success" role="status">Hvala — upit je pripremljen. U produkciji bi sada bio proslijeđen AgroMont timu.</p>}
+          {submitted && emailDraft && (
+            <div className="form-success" role="status" aria-live="polite">
+              <p>Upit je bezbjedno pripremljen. Podaci nijesu sačuvani niti poslati automatski.</p>
+              <a href={emailDraft}>Otvorite e-mail aplikaciju <Arrow /></a>
+            </div>
+          )}
         </form>
       </section>
 
       <footer className="footer">
         <div className="footer-top">
-          <Brand />
+          <Brand compact />
           <p>Proizvodnja. Program. Partnerstvo.<br />Sve što je potrebno da domaćinstvo raste.</p>
         </div>
         <div className="footer-links">
           <div><span>Navigacija</span><a href="#o-nama">O nama</a><a href="#proizvodi">Proizvodi</a><a href="#lokacije">Centri</a></div>
           <div><span>Kompanija</span><a href="#aktuelno">Aktuelno</a><a href="#karijere">Karijere</a><a href="#kontakt">Kontakt</a></div>
-          <div><span>Povežite se</span><a href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noreferrer">Instagram <Arrow /></a><a href="mailto:agromont@agro.co.me">E-mail <Arrow /></a></div>
+          <div><span>Povežite se</span><a href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Instagram <Arrow /></a><a href="mailto:agromont@agro.co.me">E-mail <Arrow /></a></div>
         </div>
         <div className="footer-bottom"><span>© 2026 AgroMont d.o.o.</span><span>Crna Gora · 42°26&apos;N 019°15&apos;E</span><a href="#vrh">Nazad na vrh ↑</a></div>
       </footer>

@@ -16,9 +16,17 @@ const sourceSerif = Source_Serif_4({
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
-  const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3005";
-  const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
-  const base = new URL(`${protocol}://${host}`);
+  const requestedHost = (requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "")
+    .split(",")[0]
+    .trim()
+    .toLowerCase();
+  const allowedHosts = new Set([
+    "localhost:3005",
+    "127.0.0.1:3005",
+    "agromont-crna-gora.ennnyy.chatgpt.site",
+  ]);
+  const host = allowedHosts.has(requestedHost) ? requestedHost : "agromont-crna-gora.ennnyy.chatgpt.site";
+  const base = new URL(host === "localhost:3005" || host === "127.0.0.1:3005" ? `http://${host}` : `https://${host}`);
   const socialImage = new URL("/og.png", base).toString();
 
   return {
