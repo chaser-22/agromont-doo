@@ -1354,8 +1354,8 @@ a {
   grid-template-columns: auto 1fr;
   align-items: center;
   gap: 10px;
-  color: rgba(17,21,16,0.58);
-  font-size: 9px;
+  color: rgba(17,21,16,0.64);
+  font-size: 11px;
   line-height: 1.5;
 }
 
