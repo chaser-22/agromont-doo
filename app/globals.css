@@ -709,8 +709,8 @@ a {
 }
 
 .product-grid.is-filtered {
-  background: white;
-  border-color: white;
+  background: var(--paper-bright);
+  border-color: var(--paper-bright);
 }
 
 .product-card {

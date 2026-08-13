@@ -114,7 +114,7 @@ test("includes responsive and accessible interaction safeguards", async () => {
   assert.match(page, /showModal\(\)/);
   assert.match(page, /accept="\.pdf,\.doc,\.docx/);
   assert.match(page, /file\.size > 5 \* 1024 \* 1024/);
-  assert.match(css, /\.product-grid\.is-filtered\s*\{[^}]*background:\s*white/s);
+  assert.match(css, /\.product-grid\.is-filtered\s*\{[^}]*background:\s*var\(--paper-bright\)/s);
   assert.match(page, /rel="noopener noreferrer"/);
 });
 
