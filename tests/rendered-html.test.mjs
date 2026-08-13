@@ -41,11 +41,16 @@ test("server-renders the Agromont site with a nonce-protected CSP", async () => 
   assert.match(csp, /base-uri 'self'/);
   assert.match(csp, /style-src [^;]*https:\/\/fonts\.googleapis\.com/);
   assert.match(csp, /font-src [^;]*https:\/\/fonts\.gstatic\.com/);
+  assert.match(csp, /frame-src https:\/\/www\.openstreetmap\.org/);
 
   const html = await response.text();
   assert.match(html, /<html lang="sr-ME"/);
   assert.match(html, /<title>AgroMont/);
   assert.match(html, /%2Fimages%2Fagromont-logo\.jpg/i);
+  for (const image of ["program-eggs.webp", "program-feed.webp", "program-grain.webp", "program-equipment.webp", "program-fencing.jpg", "program-maintenance.webp"]) {
+    assert.match(html, new RegExp(`%2Fimages%2F${image.replace(".", "\\.")}`, "i"));
+  }
+  assert.match(html, /openstreetmap\.org\/export\/embed\.html/i);
 
   const scriptTags = [...html.matchAll(/<script\b[^>]*>/gi)].map(([tag]) => tag);
   assert.ok(scriptTags.length > 0, "rendered page should contain hydration scripts");
@@ -77,6 +82,8 @@ test("keeps sensitive security decisions server-controlled on both deployment ta
   assert.match(layout, /allowedHosts/);
   assert.match(layout, /agromont-crna-gora\.ennnyy\.chatgpt\.site/);
   assert.match(page, /rel="noopener noreferrer"/);
+  assert.match(page, /sandbox="allow-scripts allow-same-origin allow-popups"/);
+  assert.match(page, /product\.imageAlt/);
   assert.match(page, /name="website"/);
   assert.match(config, /poweredByHeader:\s*false/);
   assert.match(config, /dangerouslyAllowSVG:\s*false/);

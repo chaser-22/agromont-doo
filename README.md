@@ -71,3 +71,14 @@ install commands. Vercel runs `npm ci` followed by `npm run build:vercel`.
 
 The contact form deliberately prepares a user-controlled email draft. It does
 not transmit or retain personal information on the website.
+
+## Photography credits
+
+The product-category photography uses free-to-use images from Unsplash and Pexels:
+
+- Eggs — Veronica White / Unsplash
+- Livestock feeding — Ahmed Muaz Atik / Unsplash
+- Wheat — Kateryna Hliznitsova / Unsplash
+- Agricultural equipment — Samuel Solcan / Unsplash
+- Fencing — Francesco Ungaro / Pexels
+- Vehicle maintenance — Jimmy Nilsson Masth / Unsplash

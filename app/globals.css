@@ -701,7 +701,7 @@ a {
 
 .product-grid {
   display: grid;
-  min-height: 710px;
+  min-height: 0;
   grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: rgba(17,21,16,0.16);
@@ -710,13 +710,12 @@ a {
 
 .product-card {
   position: relative;
-  display: flex;
-  min-height: 355px;
-  padding: 27px;
+  display: grid;
+  min-height: 510px;
+  padding: 0;
   overflow: hidden;
   background: var(--paper);
-  flex-direction: column;
-  justify-content: space-between;
+  grid-template-rows: 235px 1fr;
   animation: cardIn 420ms ease both;
 }
 
@@ -726,51 +725,53 @@ a {
 }
 
 .product-top {
-  position: relative;
+  position: absolute;
   z-index: 2;
+  top: 22px;
+  right: 24px;
+  left: 24px;
   display: flex;
   justify-content: space-between;
+  color: white;
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.08em;
+  text-shadow: 0 1px 12px rgba(0,0,0,0.55);
   text-transform: uppercase;
 }
 
 .product-top b {
-  color: rgba(17,21,16,0.36);
+  color: rgba(255,255,255,0.72);
 }
 
-.product-pattern {
+.product-media {
+  position: relative;
+  overflow: hidden;
+}
+
+.product-image {
+  object-fit: cover;
+  transition: transform 700ms cubic-bezier(.2,.7,.2,1), filter 700ms ease;
+}
+
+.product-image-shade {
   position: absolute;
-  top: 60px;
-  right: -15px;
-  width: 52%;
-  height: 150px;
-  opacity: 0.7;
-  transform: rotate(-8deg);
-  transition: transform 600ms cubic-bezier(.2,.7,.2,1);
+  z-index: 1;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8,12,8,0.52), transparent 56%, rgba(8,12,8,0.12));
 }
 
-.product-card:hover .product-pattern {
-  transform: rotate(-3deg) translateX(-10px);
+.product-card:hover .product-image {
+  filter: saturate(1.08) contrast(1.04);
+  transform: scale(1.045);
 }
-
-.product-pattern i {
-  display: block;
-  width: 100%;
-  height: 28px;
-  margin-bottom: 11px;
-  border: 2px solid currentColor;
-  border-radius: 50%;
-}
-
-.product-amber .product-pattern { color: var(--amber); }
-.product-green .product-pattern { color: var(--green); }
-.product-cream .product-pattern { color: #c6b991; }
 
 .product-copy {
   position: relative;
   z-index: 2;
+  display: flex;
+  padding: 28px 27px 24px;
+  flex-direction: column;
 }
 
 .product-copy h3 {
@@ -792,6 +793,7 @@ a {
 
 .product-copy a {
   display: inline-flex;
+  margin-top: auto;
   min-height: 44px;
   align-items: center;
   gap: 24px;
@@ -841,81 +843,64 @@ a {
   min-height: 590px;
   overflow: hidden;
   color: var(--ink);
-  background:
-    radial-gradient(circle at 32% 22%, rgba(255,255,255,0.68), transparent 20%),
-    linear-gradient(145deg, #e8e2d2, #b9c3a8);
+  background: #d9d2bd;
 }
 
-.map-topography {
+.location-map-frame {
   position: absolute;
-  inset: -20%;
-  opacity: 0.42;
-  background: repeating-radial-gradient(ellipse at 52% 42%, transparent 0 24px, rgba(29,52,39,0.4) 25px 26px);
-  transform: rotate(-17deg) scale(1.15);
+  width: 100%;
+  height: 100%;
+  inset: 0;
+  border: 0;
 }
 
-.map-water {
-  position: absolute;
-  right: 7%;
-  bottom: 17%;
-  padding: 55px 78px;
-  color: rgba(17,21,16,0.42);
-  background: rgba(117,151,146,0.55);
-  border-radius: 50% 46% 55% 39%;
-  font-size: 7px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  transform: rotate(12deg);
-}
-
-.map-pin {
+.map-active-card {
   position: absolute;
   z-index: 2;
+  top: 24px;
+  left: 24px;
   display: flex;
-  min-width: 44px;
-  min-height: 44px;
-  padding: 10px 0;
-  align-items: center;
-  gap: 10px;
-  color: var(--ink);
-  background: transparent;
-  border: 0;
-  cursor: pointer;
-  font-size: 10px;
+  min-width: 190px;
+  padding: 18px 20px;
+  color: white;
+  background: rgba(17,21,16,0.9);
+  box-shadow: 0 16px 40px rgba(17,21,16,0.2);
+  backdrop-filter: blur(12px);
+  flex-direction: column;
+  gap: 4px;
+}
+
+.map-active-card span {
+  color: var(--amber);
+  font-size: 8px;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
 }
 
-.map-pin i {
-  position: relative;
-  display: block;
-  width: 18px;
-  height: 18px;
-  background: var(--paper-bright);
-  border: 5px solid var(--green);
-  border-radius: 50%;
-  box-shadow: 0 0 0 7px rgba(53,90,65,0.17);
-  transition: background 220ms ease, transform 220ms ease;
+.map-active-card strong {
+  font-size: 21px;
+  font-weight: 650;
 }
 
-.map-pin.is-active i {
-  background: var(--amber);
-  border-color: var(--ink);
-  transform: scale(1.24);
-}
-
-.pin-golubovci { left: 49%; top: 48%; }
-.pin-tuzi { left: 66%; top: 37%; }
-
-.map-coordinate {
+.map-provider-link {
   position: absolute;
+  z-index: 2;
+  right: 24px;
   bottom: 24px;
-  left: 26px;
-  color: rgba(17,21,16,0.48);
-  font-size: 8px;
-  font-weight: 800;
-  letter-spacing: 0.18em;
+  display: inline-flex;
+  min-height: 46px;
+  padding: 0 18px;
+  align-items: center;
+  gap: 18px;
+  color: white;
+  background: rgba(17,21,16,0.9);
+  box-shadow: 0 12px 34px rgba(17,21,16,0.18);
+  backdrop-filter: blur(12px);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .location-panel {
@@ -1613,16 +1598,15 @@ a {
   .visual-badge strong { max-width: 190px; font-size: 19px; }
   .filters { margin-top: 45px; }
   .product-grid { min-height: 0; grid-template-columns: 1fr; }
-  .product-card { min-height: 340px; }
+  .product-card { min-height: 520px; grid-template-rows: 250px 1fr; }
   .locations-intro { grid-template-columns: 1fr; }
   .locations-intro p { grid-column: auto; }
   .location-layout { grid-template-columns: 1fr; }
   .location-map { min-height: 430px; }
   .location-panel { min-width: 0; padding: 30px 24px; }
   .location-detail { min-height: 380px; }
-  .pin-golubovci { left: 38%; top: 52%; }
-  .pin-tuzi { left: 59%; top: 34%; }
-  .map-water { right: -12%; }
+  .map-active-card { top: 16px; left: 16px; min-width: 164px; padding: 14px 16px; }
+  .map-provider-link { right: 16px; bottom: 16px; }
   .news-grid { grid-template-columns: 1fr; }
   .news-feature { grid-column: auto; min-height: 570px; }
   .news-card { min-height: 490px; }

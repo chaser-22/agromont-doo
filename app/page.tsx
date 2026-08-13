@@ -11,6 +11,8 @@ type Product = {
   description: string;
   accent: string;
   index: string;
+  image: string;
+  imageAlt: string;
 };
 
 const products: Product[] = [
@@ -23,6 +25,8 @@ const products: Product[] = [
       "Od kontrolisane proizvodnje do pouzdane isporuke — kvalitet koji svakog dana stiže do domaćinstava i partnera.",
     accent: "amber",
     index: "01",
+    image: "/images/program-eggs.webp",
+    imageAlt: "Složena svježa jaja u transportnim kartonima",
   },
   {
     id: "hrana",
@@ -33,6 +37,8 @@ const products: Product[] = [
       "Programi za živinu, goveda i svinje, uz stručnu preporuku i stabilan kvalitet formulacije.",
     accent: "green",
     index: "02",
+    image: "/images/program-feed.webp",
+    imageAlt: "Goveda tokom hranjenja u savremenom objektu",
   },
   {
     id: "zitarice",
@@ -43,6 +49,8 @@ const products: Product[] = [
       "Kukuruz, pšenica i odabrane sirovine za gazdinstva, dostupne kroz mrežu AgroMont centara.",
     accent: "cream",
     index: "03",
+    image: "/images/program-grain.webp",
+    imageAlt: "Zreli klasovi pšenice pred žetvu",
   },
   {
     id: "oprema",
@@ -53,6 +61,8 @@ const products: Product[] = [
       "Mašine, priključci, alati i potrošni program birani za stvarne potrebe savremenog gazdinstva.",
     accent: "amber",
     index: "04",
+    image: "/images/program-equipment.webp",
+    imageAlt: "Savremeni traktor tokom obrade poljoprivrednog zemljišta",
   },
   {
     id: "ograde",
@@ -63,6 +73,8 @@ const products: Product[] = [
       "Modularna rješenja za imanja, objekte i proizvodne prostore, uz podršku pri izboru elemenata.",
     accent: "green",
     index: "05",
+    image: "/images/program-fencing.jpg",
+    imageAlt: "Panelna metalna ograda na otvorenom prostoru",
   },
   {
     id: "odrzavanje",
@@ -73,6 +85,8 @@ const products: Product[] = [
       "Odabrani proizvodi za njegu vozila, radionicu i svakodnevno održavanje opreme i prostora.",
     accent: "cream",
     index: "06",
+    image: "/images/program-maintenance.webp",
+    imageAlt: "Mehaničar tokom održavanja vozila u radionici",
   },
 ];
 
@@ -91,7 +105,9 @@ const locations = [
     type: "Poljoprivredni centar",
     description:
       "Kompletan program za gazdinstva, stručna preporuka i podrška pri izboru proizvoda.",
-    mapClass: "pin-golubovci",
+    mapEmbed:
+      "https://www.openstreetmap.org/export/embed.html?bbox=19.1682648%2C42.3136453%2C19.2682648%2C42.3736453&layer=mapnik&marker=42.3436453%2C19.2182648",
+    mapLink: "https://www.openstreetmap.org/?mlat=42.3436453&mlon=19.2182648#map=14/42.3436453/19.2182648",
   },
   {
     id: "tuzi",
@@ -99,7 +115,9 @@ const locations = [
     type: "Prodajni centar",
     description:
       "Savremena maloprodaja poljoprivrednog, baštenskog i pratećeg programa na jednom mjestu.",
-    mapClass: "pin-tuzi",
+    mapEmbed:
+      "https://www.openstreetmap.org/export/embed.html?bbox=19.2800881%2C42.3361526%2C19.3800881%2C42.3961526&layer=mapnik&marker=42.3661526%2C19.3300881",
+    mapLink: "https://www.openstreetmap.org/?mlat=42.3661526&mlon=19.3300881#map=14/42.3661526/19.3300881",
   },
 ];
 
@@ -463,8 +481,17 @@ export default function Home() {
         <div className="product-grid" aria-live="polite">
           {filteredProducts.map((product) => (
             <article className={`product-card product-${product.accent}`} key={product.id}>
-              <div className="product-top"><span>{product.eyebrow}</span><b>{product.index}</b></div>
-              <div className="product-pattern" aria-hidden="true"><i /><i /><i /></div>
+              <div className="product-media">
+                <Image
+                  className="product-image"
+                  src={product.image}
+                  alt={product.imageAlt}
+                  fill
+                  sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1080px) 50vw, 33vw"
+                />
+                <div className="product-image-shade" aria-hidden="true" />
+                <div className="product-top"><span>{product.eyebrow}</span><b>{product.index}</b></div>
+              </div>
               <div className="product-copy">
                 <h3>{product.title}</h3>
                 <p>{product.description}</p>
@@ -485,20 +512,28 @@ export default function Home() {
         </div>
         <div className="location-layout reveal">
           <div className="location-map" aria-label="Prikaz AgroMont lokacija u centralnoj Crnoj Gori">
-            <div className="map-topography" aria-hidden="true" />
-            <span className="map-water" aria-hidden="true">SKADARSKO JEZERO</span>
-            {locations.map((location) => (
-              <button
-                type="button"
-                key={location.id}
-                className={`map-pin ${location.mapClass} ${activeLocation === location.id ? "is-active" : ""}`}
-                onClick={() => setActiveLocation(location.id)}
-                aria-label={`Prikaži lokaciju ${location.city}`}
-              >
-                <i /><span>{location.city}</span>
-              </button>
-            ))}
-            <div className="map-coordinate">42.40 / 19.28</div>
+            <iframe
+              key={selectedLocation.id}
+              className="location-map-frame"
+              src={selectedLocation.mapEmbed}
+              title={`Interaktivna mapa AgroMont centra ${selectedLocation.city}`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+            <div className="map-active-card" aria-live="polite">
+              <span>Aktivna lokacija</span>
+              <strong>{selectedLocation.city}</strong>
+            </div>
+            <a
+              className="map-provider-link"
+              href={selectedLocation.mapLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              referrerPolicy="no-referrer"
+            >
+              Otvori veću mapu <Arrow />
+            </a>
           </div>
           <div className="location-panel">
             <div className="location-tabs" role="tablist" aria-label="AgroMont lokacije">

@@ -32,7 +32,7 @@ export function createContentSecurityPolicy(nonce: string, development = false):
     "media-src 'self'",
     "manifest-src 'self'",
     "worker-src 'self' blob:",
-    "frame-src 'none'",
+    "frame-src https://www.openstreetmap.org",
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
