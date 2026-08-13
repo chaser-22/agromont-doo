@@ -487,6 +487,7 @@ export default function Home() {
                   src={product.image}
                   alt={product.imageAlt}
                   fill
+                  unoptimized
                   sizes="(max-width: 760px) calc(100vw - 40px), (max-width: 1080px) 50vw, 33vw"
                 />
                 <div className="product-image-shade" aria-hidden="true" />

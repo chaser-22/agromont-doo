@@ -48,7 +48,7 @@ test("server-renders the Agromont site with a nonce-protected CSP", async () => 
   assert.match(html, /<title>AgroMont/);
   assert.match(html, /%2Fimages%2Fagromont-logo\.jpg/i);
   for (const image of ["program-eggs-generated.webp", "program-feed-generated.webp", "program-grain-generated.webp", "program-equipment-generated.webp", "program-fencing-generated.webp", "program-maintenance-generated.webp"]) {
-    assert.match(html, new RegExp(`%2Fimages%2F${image.replace(".", "\\.")}`, "i"));
+    assert.match(html, new RegExp(`/images/${image.replace(".", "\\.")}`, "i"));
   }
   assert.match(html, /openstreetmap\.org\/export\/embed\.html/i);
 
