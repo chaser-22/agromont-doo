@@ -25,8 +25,8 @@ const products: Product[] = [
       "Od kontrolisane proizvodnje do pouzdane isporuke — kvalitet koji svakog dana stiže do domaćinstava i partnera.",
     accent: "amber",
     index: "01",
-    image: "/images/program-eggs.webp",
-    imageAlt: "Složena svježa jaja u transportnim kartonima",
+    image: "/images/program-eggs-generated.webp",
+    imageAlt: "Svježa domaća jaja u kartonskim pakovanjima",
   },
   {
     id: "hrana",
@@ -37,8 +37,8 @@ const products: Product[] = [
       "Programi za živinu, goveda i svinje, uz stručnu preporuku i stabilan kvalitet formulacije.",
     accent: "green",
     index: "02",
-    image: "/images/program-feed.webp",
-    imageAlt: "Goveda tokom hranjenja u savremenom objektu",
+    image: "/images/program-feed-generated.webp",
+    imageAlt: "Stočna hrana od žitarica uz pašnjak sa govedima",
   },
   {
     id: "zitarice",
@@ -49,8 +49,8 @@ const products: Product[] = [
       "Kukuruz, pšenica i odabrane sirovine za gazdinstva, dostupne kroz mrežu AgroMont centara.",
     accent: "cream",
     index: "03",
-    image: "/images/program-grain.webp",
-    imageAlt: "Zreli klasovi pšenice pred žetvu",
+    image: "/images/program-grain-generated.webp",
+    imageAlt: "Pšenica i kukuruz spremni za poljoprivrednu proizvodnju",
   },
   {
     id: "oprema",
@@ -61,8 +61,8 @@ const products: Product[] = [
       "Mašine, priključci, alati i potrošni program birani za stvarne potrebe savremenog gazdinstva.",
     accent: "amber",
     index: "04",
-    image: "/images/program-equipment.webp",
-    imageAlt: "Savremeni traktor tokom obrade poljoprivrednog zemljišta",
+    image: "/images/program-equipment-generated.webp",
+    imageAlt: "Savremeni traktor obrađuje poljoprivredno zemljište",
   },
   {
     id: "ograde",
@@ -73,8 +73,8 @@ const products: Product[] = [
       "Modularna rješenja za imanja, objekte i proizvodne prostore, uz podršku pri izboru elemenata.",
     accent: "green",
     index: "05",
-    image: "/images/program-fencing.jpg",
-    imageAlt: "Panelna metalna ograda na otvorenom prostoru",
+    image: "/images/program-fencing-generated.webp",
+    imageAlt: "Nova panelna ograda oko poljoprivrednog imanja",
   },
   {
     id: "odrzavanje",
@@ -85,8 +85,8 @@ const products: Product[] = [
       "Odabrani proizvodi za njegu vozila, radionicu i svakodnevno održavanje opreme i prostora.",
     accent: "cream",
     index: "06",
-    image: "/images/program-maintenance.webp",
-    imageAlt: "Mehaničar tokom održavanja vozila u radionici",
+    image: "/images/program-maintenance-generated.webp",
+    imageAlt: "Mehaničar održava poljoprivredno vozilo u radionici",
   },
 ];
 
