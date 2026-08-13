@@ -708,6 +708,11 @@ a {
   border: 1px solid rgba(17,21,16,0.16);
 }
 
+.product-grid.is-filtered {
+  background: white;
+  border-color: white;
+}
+
 .product-card {
   position: relative;
   display: grid;
@@ -1168,27 +1173,145 @@ a {
   border-top: 1px solid rgba(255,255,255,0.17);
 }
 
-.jobs > a {
+.jobs > a,
+.jobs > button {
   display: grid;
+  width: 100%;
   min-height: 165px;
   padding: 30px 5px;
+  color: inherit;
+  text-align: left;
+  background: transparent;
+  border: 0;
   grid-template-columns: 50px 1fr auto;
   align-items: center;
   border-bottom: 1px solid rgba(255,255,255,0.17);
+  cursor: pointer;
+  font: inherit;
   transition: padding 240ms ease, background 240ms ease;
 }
 
-.jobs > a:hover {
+.jobs > a:hover,
+.jobs > button:hover {
   padding-right: 20px;
   padding-left: 20px;
   background: rgba(255,255,255,0.04);
 }
 
-.jobs > a > span {
+.jobs > a > span,
+.jobs > button > span {
   color: var(--amber);
   font-size: 9px;
   font-weight: 900;
 }
+
+.career-dialog {
+  width: min(760px, calc(100vw - 40px));
+  max-height: calc(100dvh - 40px);
+  padding: 0;
+  color: var(--ink);
+  background: var(--paper-bright);
+  border: 0;
+  overflow: auto;
+  box-shadow: 0 30px 100px rgba(0,0,0,0.42);
+}
+
+.career-dialog::backdrop {
+  background: rgba(8,12,8,0.76);
+  backdrop-filter: blur(8px);
+}
+
+.career-dialog-head {
+  display: flex;
+  padding: 30px 34px 24px;
+  align-items: start;
+  justify-content: space-between;
+  color: white;
+  background: var(--green-dark);
+}
+
+.career-dialog-head span {
+  color: var(--amber);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.career-dialog-head h2 {
+  margin: 7px 0 0;
+  font-size: clamp(38px, 5vw, 60px);
+}
+
+.dialog-close {
+  width: 44px;
+  height: 44px;
+  color: white;
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.24);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 27px;
+  line-height: 1;
+}
+
+.career-form {
+  display: flex;
+  padding: 30px 34px 34px;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.career-form label:not(.consent) {
+  display: flex;
+  color: rgba(17,21,16,0.68);
+  font-size: 9px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  flex-direction: column;
+  gap: 8px;
+  text-transform: uppercase;
+}
+
+.career-form input:not([type="checkbox"]),
+.career-form select,
+.career-form textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: white;
+  border: 1px solid rgba(17,21,16,0.2);
+  border-radius: 0;
+  font: inherit;
+  font-size: 13px;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+.career-form textarea { resize: vertical; }
+.career-form input[type="file"] { padding: 10px; }
+.career-form small { color: rgba(17,21,16,0.5); font-weight: 600; letter-spacing: normal; text-transform: none; }
+.career-form .consent { color: rgba(17,21,16,0.68); }
+.career-form > .button { align-self: flex-end; }
+
+.career-error {
+  margin: 0;
+  color: #a12820;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.career-ready {
+  display: grid;
+  padding-top: 18px;
+  border-top: 1px solid rgba(17,21,16,0.16);
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 24px;
+}
+
+.career-ready p { margin: 0; font-size: 12px; line-height: 1.6; }
 
 .jobs h3 {
   margin: 0 0 7px;
@@ -1612,7 +1735,13 @@ a {
   .news-card { min-height: 490px; }
   .news-feature,
   .news-card { padding: 27px; }
-  .jobs > a { grid-template-columns: 42px 1fr auto; }
+  .jobs > a,
+  .jobs > button { grid-template-columns: 42px 1fr auto; }
+  .career-dialog { width: calc(100vw - 24px); max-height: calc(100dvh - 24px); }
+  .career-dialog-head { padding: 24px 20px 20px; }
+  .career-form { padding: 24px 20px 28px; }
+  .career-ready { grid-template-columns: 1fr; }
+  .career-ready .button { width: 100%; }
   .field-row { grid-template-columns: 1fr; gap: 0; }
   .form-bottom { grid-template-columns: 1fr; }
   .form-bottom .button { width: 100%; }

@@ -149,9 +149,15 @@ export default function Home() {
   const [activeLocation, setActiveLocation] = useState("golubovci");
   const [submitted, setSubmitted] = useState(false);
   const [emailDraft, setEmailDraft] = useState<string | null>(null);
+  const [careerPosition, setCareerPosition] = useState("Otvorena prijava");
+  const [careerDraft, setCareerDraft] = useState<string | null>(null);
+  const [careerFileName, setCareerFileName] = useState("");
+  const [careerError, setCareerError] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const mobileMenuRef = useRef<HTMLDivElement>(null);
+  const careerDialogRef = useRef<HTMLDialogElement>(null);
+  const careerOpenButtonRef = useRef<HTMLButtonElement>(null);
 
   const filteredProducts = useMemo(
     () =>
@@ -231,6 +237,25 @@ export default function Home() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const openCareerDialog = (position = "Otvorena prijava") => {
+    setCareerDraft(null);
+    setCareerFileName("");
+    setCareerError("");
+    setCareerPosition(position);
+    requestAnimationFrame(() => {
+      const dialog = careerDialogRef.current;
+      if (!dialog) return;
+      dialog.dataset.position = position;
+      if (!dialog.open) dialog.showModal();
+      dialog.querySelector<HTMLInputElement>("input[name='candidateName']")?.focus();
+    });
+  };
+
+  const closeCareerDialog = () => {
+    careerDialogRef.current?.close();
+    requestAnimationFrame(() => careerOpenButtonRef.current?.focus());
+  };
+
   const selectLocationWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
     if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
     event.preventDefault();
@@ -289,6 +314,61 @@ export default function Home() {
     );
     setSubmitted(true);
     form.reset();
+  };
+
+  const submitCareerForm = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const data = new FormData(form);
+    const clean = (field: string, maxLength: number) =>
+      Array.from(String(data.get(field) ?? ""))
+        .filter((character) => character.charCodeAt(0) >= 32 && character.charCodeAt(0) !== 127)
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, maxLength);
+
+    const fileInput = form.elements.namedItem("cv") as HTMLInputElement;
+    const file = fileInput.files?.[0];
+    const allowedTypes = [
+      "application/pdf",
+      "application/msword",
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    ];
+    const allowedExtensions = /\.(pdf|doc|docx)$/i;
+
+    if (!file || !allowedExtensions.test(file.name) || (file.type && !allowedTypes.includes(file.type))) {
+      setCareerError("Izaberite CV u PDF, DOC ili DOCX formatu.");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setCareerError("CV može imati najviše 5 MB.");
+      return;
+    }
+
+    const name = clean("candidateName", 80);
+    const email = clean("candidateEmail", 254);
+    const phone = clean("candidatePhone", 40);
+    const note = clean("candidateNote", 600);
+    const position = clean("position", 80) || careerDialogRef.current?.dataset.position || "Otvorena prijava";
+    const subject = `Prijava za posao — ${position}`;
+    const body = [
+      `Ime i prezime: ${name}`,
+      `E-mail: ${email}`,
+      `Telefon: ${phone || "Nije naveden"}`,
+      `Pozicija: ${position}`,
+      `CV za prilog: ${file.name}`,
+      "",
+      note ? `Kratka poruka:\r\n${note}` : "",
+      "",
+      `Molim vas priložite datoteku „${file.name}” ovom e-mailu prije slanja.`,
+    ].filter(Boolean).join("\r\n");
+
+    setCareerError("");
+    setCareerFileName(file.name);
+    setCareerDraft(
+      `mailto:agromont@agro.co.me?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`,
+    );
   };
 
   return (
@@ -478,7 +558,7 @@ export default function Home() {
           ))}
         </div>
 
-        <div className="product-grid" aria-live="polite">
+        <div className={`product-grid ${activeFilter === "sve" ? "" : "is-filtered"}`} aria-live="polite">
           {filteredProducts.map((product) => (
             <article className={`product-card product-${product.accent}`} key={product.id}>
               <div className="product-media">
@@ -610,24 +690,70 @@ export default function Home() {
           <p>
             Tražimo ljude koji razumiju tržište, poštuju proizvodnju i žele da naprave mjerljiv pomak.
           </p>
-          <a className="button button-primary" href="mailto:agromont@agro.co.me?subject=Prijava%20za%20posao">Pošaljite CV <Arrow /></a>
+          <button ref={careerOpenButtonRef} className="button button-primary" type="button" onClick={() => openCareerDialog()}>
+            Pošaljite CV <Arrow />
+          </button>
         </div>
         <div className="jobs reveal">
           {[
             ["Marketing koordinator", "Jedna pozicija", "AgroMont sistem"],
             ["Agronom", "Više pozicija", "Golubovci / Tuzi"],
           ].map(([title, count, place], index) => (
-            <a href={`mailto:agromont@agro.co.me?subject=Prijava%20-%20${encodeURIComponent(title)}`} key={title}>
+            <button type="button" onClick={() => openCareerDialog(title)} key={title}>
               <span>0{index + 1}</span>
               <div><h3>{title}</h3><p>{count} · {place}</p></div>
               <Arrow />
-            </a>
+            </button>
           ))}
           <div className="jobs-note">
             Ne vidite svoju poziciju? Pošaljite otvorenu prijavu na <a href="mailto:agromont@agro.co.me">agromont@agro.co.me</a>
           </div>
         </div>
       </section>
+
+      <dialog
+        ref={careerDialogRef}
+        className="career-dialog"
+        aria-labelledby="career-dialog-title"
+        onClose={() => setCareerDraft(null)}
+        onCancel={(event) => {
+          event.preventDefault();
+          closeCareerDialog();
+        }}
+      >
+        <div className="career-dialog-head">
+          <div>
+            <span>Karijere · AgroMont</span>
+            <h2 id="career-dialog-title">Pošaljite CV</h2>
+          </div>
+          <button type="button" className="dialog-close" aria-label="Zatvorite prijavu" onClick={closeCareerDialog}>×</button>
+        </div>
+        <form className="career-form" onSubmit={submitCareerForm} acceptCharset="UTF-8">
+          <div className="field-row">
+            <label>Ime i prezime<input required name="candidateName" autoComplete="name" minLength={2} maxLength={80} /></label>
+            <label>E-mail<input required name="candidateEmail" type="email" autoComplete="email" inputMode="email" maxLength={254} /></label>
+          </div>
+          <div className="field-row">
+            <label>Telefon<input name="candidatePhone" type="tel" autoComplete="tel" inputMode="tel" maxLength={40} /></label>
+            <label>Pozicija<select name="position" value={careerPosition} onChange={(event) => setCareerPosition(event.target.value)}><option>Otvorena prijava</option><option>Marketing koordinator</option><option>Agronom</option></select></label>
+          </div>
+          <label>CV dokument
+            <input required name="cv" type="file" accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onChange={() => { setCareerDraft(null); setCareerError(""); }} />
+            <small>PDF, DOC ili DOCX · najviše 5 MB</small>
+          </label>
+          <label>Kratka poruka<textarea name="candidateNote" rows={3} maxLength={600} placeholder="Recite nam ukratko zašto želite da se pridružite timu…" /></label>
+          <label className="consent"><input required type="checkbox" name="careerConsent" /> <span>Saglasan/na sam da AgroMont obradi podatke iz prijave radi selekcije kandidata.</span></label>
+          {careerError && <p className="career-error" role="alert">{careerError}</p>}
+          {!careerDraft ? (
+            <button className="button button-primary" type="submit">Pripremite prijavu <Arrow /></button>
+          ) : (
+            <div className="career-ready" role="status" aria-live="polite">
+              <p>Prijava je pripremljena. U e-mail aplikaciji obavezno priložite <strong>{careerFileName}</strong>.</p>
+              <a className="button button-primary" href={careerDraft}>Otvorite e-mail i priložite CV <Arrow /></a>
+            </div>
+          )}
+        </form>
+      </dialog>
 
       <section className="contact section-pad" id="kontakt">
         <div className="contact-copy reveal">
