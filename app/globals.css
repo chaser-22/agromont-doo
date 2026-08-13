@@ -44,6 +44,40 @@ a {
   text-decoration: none;
 }
 
+.arrow-icon {
+  position: relative;
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  color: currentColor;
+  font-size: 0;
+  line-height: 0;
+}
+
+.arrow-icon::before {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  content: "";
+  border-top: 1.5px solid currentColor;
+  border-right: 1.5px solid currentColor;
+}
+
+.arrow-icon::after {
+  position: absolute;
+  top: 3px;
+  right: 1px;
+  width: 11px;
+  height: 1.5px;
+  content: "";
+  background: currentColor;
+  transform: rotate(-45deg);
+  transform-origin: right center;
+}
+
 button,
 input,
 textarea,
@@ -1203,6 +1237,13 @@ a {
   color: var(--amber);
   font-size: 9px;
   font-weight: 900;
+}
+
+.jobs > a > .arrow-icon,
+.jobs > button > .arrow-icon {
+  width: 14px;
+  height: 14px;
+  flex-basis: 14px;
 }
 
 .career-dialog {

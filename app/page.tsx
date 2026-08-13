@@ -140,7 +140,7 @@ function Brand({ compact = false }: { compact?: boolean }) {
 }
 
 function Arrow() {
-  return <span aria-hidden="true">↗</span>;
+  return <span className="arrow-icon" aria-hidden="true" />;
 }
 
 export default function Home() {

@@ -110,6 +110,9 @@ test("includes responsive and accessible interaction safeguards", async () => {
   assert.match(page, /selectLocationWithKeyboard/);
   assert.match(page, /aria-controls="location-panel"/);
   assert.match(page, /aria-live="polite"/);
+  assert.match(page, /className="arrow-icon"/);
+  assert.match(css, /\.arrow-icon::before/);
+  assert.match(css, /\.arrow-icon::after/);
   assert.match(page, /acceptCharset="UTF-8"/);
   assert.match(page, /showModal\(\)/);
   assert.match(page, /accept="\.pdf,\.doc,\.docx/);
