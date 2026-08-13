@@ -1,6 +1,15 @@
 /** Cloudflare Worker entry point for the vinext-starter template. */
 import { handleImageOptimization, DEFAULT_DEVICE_SIZES, DEFAULT_IMAGE_SIZES } from "vinext/server/image-optimization";
 import handler from "vinext/server/app-router-entry";
+import {
+  ALLOWED_METHODS,
+  ALLOW_HEADER,
+  BASELINE_SECURITY_HEADERS,
+  createContentSecurityPolicy,
+  isAllowedImageSource,
+  MAX_REQUEST_URL_LENGTH,
+  STRICT_TRANSPORT_SECURITY,
+} from "../security/policy";
 
 interface Env {
   ASSETS: Fetcher;
@@ -19,27 +28,12 @@ interface ExecutionContext {
   passThroughOnException(): void;
 }
 
-const ALLOWED_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-const MAX_REQUEST_URL_LENGTH = 4096;
-
 function addBaselineSecurityHeaders(headers: Headers, isHttps: boolean): void {
-  headers.set("X-Content-Type-Options", "nosniff");
-  headers.set("X-Frame-Options", "DENY");
-  headers.set("X-XSS-Protection", "0");
-  headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-  headers.set(
-    "Permissions-Policy",
-    "accelerometer=(), autoplay=(), camera=(), display-capture=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), browsing-topics=()",
-  );
-  headers.set("Cross-Origin-Opener-Policy", "same-origin");
-  headers.set("Cross-Origin-Resource-Policy", "same-origin");
-  headers.set("Origin-Agent-Cluster", "?1");
-  headers.set("X-Permitted-Cross-Domain-Policies", "none");
-  headers.set("X-DNS-Prefetch-Control", "off");
+  for (const [key, value] of BASELINE_SECURITY_HEADERS) headers.set(key, value);
   headers.delete("X-Powered-By");
 
   if (isHttps) {
-    headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains");
+    headers.set("Strict-Transport-Security", STRICT_TRANSPORT_SECURITY);
   }
 }
 
@@ -59,33 +53,16 @@ async function secureResponse(response: Response, requestUrl: URL): Promise<Resp
   }
 
   const nonce = crypto.randomUUID().replaceAll("-", "");
-  headers.set(
-    "Content-Security-Policy",
-    [
-      "default-src 'self'",
-      `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
-      "script-src-attr 'none'",
-      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-      "img-src 'self' data: blob:",
-      "font-src 'self' data: https://fonts.gstatic.com",
-      "connect-src 'self'",
-      "media-src 'self'",
-      "manifest-src 'self'",
-      "worker-src 'self' blob:",
-      "frame-src 'none'",
-      "frame-ancestors 'none'",
-      "object-src 'none'",
-      "base-uri 'self'",
-      "form-action 'self' mailto:",
-      "upgrade-insecure-requests",
-    ].join("; "),
-  );
+  headers.set("Content-Security-Policy", createContentSecurityPolicy(nonce));
 
   const html = await response.text();
-  const securedHtml = html.replace(
-    /<script\b(?![^>]*\bnonce=)/gi,
-    `<script nonce="${nonce}"`,
-  );
+  const securedHtml = html.replace(/<script\b([^>]*)>/gi, (_tag, attributes: string) => {
+    const withoutExistingNonce = attributes.replace(
+      /\s+nonce=(?:"[^"]*"|'[^']*'|[^\s>]+)/gi,
+      "",
+    );
+    return `<script nonce="${nonce}"${withoutExistingNonce}>`;
+  });
 
   return new Response(securedHtml, {
     status: response.status,
@@ -119,16 +96,16 @@ const worker = {
     }
 
     if (!ALLOWED_METHODS.has(request.method)) {
-      return rejectedRequest(405, "Method not allowed", url, "GET, HEAD, OPTIONS");
+      return rejectedRequest(405, "Method not allowed", url, ALLOW_HEADER);
     }
 
     if (request.method === "OPTIONS") {
-      return rejectedRequest(204, "", url, "GET, HEAD, OPTIONS");
+      return rejectedRequest(204, "", url, ALLOW_HEADER);
     }
 
-    if (url.pathname === "/_vinext/image") {
+    if (url.pathname === "/_vinext/image" || url.pathname === "/_next/image") {
       const source = url.searchParams.get("url");
-      if (!source || !source.startsWith("/images/") || source.startsWith("//") || source.includes("\\")) {
+      if (!isAllowedImageSource(source)) {
         return rejectedRequest(400, "Invalid image source", url);
       }
 

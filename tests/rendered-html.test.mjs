@@ -54,31 +54,65 @@ test("server-renders the Agromont site with a nonce-protected CSP", async () => 
   }
 });
 
-test("keeps sensitive security decisions server-controlled", async () => {
-  const [worker, layout, page, config] = await Promise.all([
+test("keeps sensitive security decisions server-controlled on both deployment targets", async () => {
+  const [worker, policy, proxy, layout, page, config, vercel] = await Promise.all([
     readFile(new URL("../worker/index.ts", import.meta.url), "utf8"),
+    readFile(new URL("../security/policy.ts", import.meta.url), "utf8"),
+    readFile(new URL("../proxy.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/layout.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../next.config.ts", import.meta.url), "utf8"),
+    readFile(new URL("../vercel.json", import.meta.url), "utf8"),
   ]);
 
   assert.match(worker, /ALLOWED_METHODS/);
-  assert.match(worker, /source\.startsWith\("\/images\/"\)/);
-  assert.match(worker, /Strict-Transport-Security/);
-  assert.match(worker, /Content-Security-Policy/);
+  assert.match(worker, /isAllowedImageSource/);
+  assert.match(worker, /createContentSecurityPolicy/);
+  assert.match(policy, /source\.includes\("\.\."\)/);
+  assert.match(policy, /\^\\\/images/);
+  assert.match(policy, /Strict-Transport-Security|STRICT_TRANSPORT_SECURITY/);
+  assert.match(proxy, /Content-Security-Policy/);
+  assert.match(proxy, /requestHeaders\.set\("x-nonce"/);
+  assert.match(proxy, /request\.nextUrl\.pathname === "\/_next\/image"/);
   assert.match(layout, /allowedHosts/);
   assert.match(layout, /agromont-crna-gora\.ennnyy\.chatgpt\.site/);
   assert.match(page, /rel="noopener noreferrer"/);
   assert.match(page, /name="website"/);
   assert.match(config, /poweredByHeader:\s*false/);
   assert.match(config, /dangerouslyAllowSVG:\s*false/);
+  assert.match(config, /BASELINE_SECURITY_HEADERS/);
+  assert.equal(JSON.parse(vercel).framework, "nextjs");
+  assert.equal(JSON.parse(vercel).buildCommand, "npm run build:vercel");
+});
+
+test("includes responsive and accessible interaction safeguards", async () => {
+  const [css, page] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(css, /@media \(max-width: 1080px\)/);
+  assert.match(css, /@media \(max-width: 760px\)/);
+  assert.match(css, /@media \(max-width: 420px\)/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(css, /min-width:\s*44px/);
+  assert.match(page, /aria-expanded=\{menuOpen\}/);
+  assert.match(page, /requestAnimationFrame\(\(\) => menuButtonRef\.current\?\.focus\(\)\)/);
+  assert.match(page, /event\.key === "Escape"/);
+  assert.match(page, /role="tablist"/);
+  assert.match(page, /selectLocationWithKeyboard/);
+  assert.match(page, /aria-controls="location-panel"/);
+  assert.match(page, /aria-live="polite"/);
+  assert.match(page, /acceptCharset="UTF-8"/);
+  assert.match(page, /rel="noopener noreferrer"/);
 });
 
 test("rejects unsupported requests and ignores untrusted hosts", async () => {
-  const [post, options, remoteImage, poisonedHost] = await Promise.all([
+  const [post, options, remoteImage, traversalImage, poisonedHost] = await Promise.all([
     invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/", { method: "POST" }),
     invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/", { method: "OPTIONS" }),
-    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/_vinext/image?url=https%3A%2F%2Fevil.example%2Fx.jpg&w=640&q=75"),
+    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/_next/image?url=https%3A%2F%2Fevil.example%2Fx.jpg&w=640&q=75"),
+    invoke("https://agromont-crna-gora.ennnyy.chatgpt.site/_next/image?url=%2Fimages%2F..%2Fsecret.jpg&w=640&q=75"),
     render("https://evil.example/"),
   ]);
 
@@ -86,6 +120,7 @@ test("rejects unsupported requests and ignores untrusted hosts", async () => {
   assert.equal(post.headers.get("allow"), "GET, HEAD, OPTIONS");
   assert.equal(options.status, 204);
   assert.equal(remoteImage.status, 400);
+  assert.equal(traversalImage.status, 400);
   assert.equal(poisonedHost.headers.get("strict-transport-security"), "max-age=63072000; includeSubDomains");
 
   const poisonedHtml = await poisonedHost.text();

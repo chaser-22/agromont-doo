@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent as ReactKeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Product = {
   id: string;
@@ -132,6 +132,8 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false);
   const [emailDraft, setEmailDraft] = useState<string | null>(null);
   const [scrolled, setScrolled] = useState(false);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const filteredProducts = useMemo(
     () =>
@@ -176,10 +178,53 @@ export default function Home() {
 
   useEffect(() => {
     document.body.classList.toggle("menu-lock", menuOpen);
-    return () => document.body.classList.remove("menu-lock");
+    if (!menuOpen) return () => document.body.classList.remove("menu-lock");
+
+    const menu = mobileMenuRef.current;
+    const focusable = menu?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])") ?? [];
+    focusable[0]?.focus();
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setMenuOpen(false);
+        requestAnimationFrame(() => menuButtonRef.current?.focus());
+        return;
+      }
+
+      if (event.key !== "Tab" || focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.classList.remove("menu-lock");
+    };
   }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const selectLocationWithKeyboard = (event: ReactKeyboardEvent<HTMLButtonElement>, index: number) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    let nextIndex = index;
+    if (event.key === "ArrowLeft") nextIndex = (index - 1 + locations.length) % locations.length;
+    if (event.key === "ArrowRight") nextIndex = (index + 1) % locations.length;
+    if (event.key === "Home") nextIndex = 0;
+    if (event.key === "End") nextIndex = locations.length - 1;
+    const nextLocation = locations[nextIndex];
+    setActiveLocation(nextLocation.id);
+    requestAnimationFrame(() => document.getElementById(`location-tab-${nextLocation.id}`)?.focus());
+  };
 
   const submitForm = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -246,10 +291,12 @@ export default function Home() {
           Kontakt <Arrow />
         </a>
         <button
+          ref={menuButtonRef}
           className={`menu-toggle ${menuOpen ? "is-open" : ""}`}
           type="button"
           aria-label={menuOpen ? "Zatvori meni" : "Otvori meni"}
           aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
           onClick={() => setMenuOpen((open) => !open)}
         >
           <span />
@@ -257,7 +304,7 @@ export default function Home() {
         </button>
       </header>
 
-      <div className={`mobile-menu ${menuOpen ? "is-open" : ""}`} aria-hidden={!menuOpen}>
+      <div ref={mobileMenuRef} id="mobile-navigation" className={`mobile-menu ${menuOpen ? "is-open" : ""}`} aria-hidden={!menuOpen}>
         <nav aria-label="Mobilna navigacija">
           {[
             ["O nama", "#o-nama"],
@@ -455,19 +502,23 @@ export default function Home() {
           </div>
           <div className="location-panel">
             <div className="location-tabs" role="tablist" aria-label="AgroMont lokacije">
-              {locations.map((location) => (
+              {locations.map((location, index) => (
                 <button
                   role="tab"
+                  id={`location-tab-${location.id}`}
+                  aria-controls="location-panel"
                   aria-selected={activeLocation === location.id}
+                  tabIndex={activeLocation === location.id ? 0 : -1}
                   type="button"
                   key={location.id}
                   onClick={() => setActiveLocation(location.id)}
+                  onKeyDown={(event) => selectLocationWithKeyboard(event, index)}
                 >
                   {location.city}
                 </button>
               ))}
             </div>
-            <div className="location-detail" role="tabpanel">
+            <div className="location-detail" role="tabpanel" id="location-panel" aria-labelledby={`location-tab-${activeLocation}`}>
               <span>Aktivna lokacija</span>
               <h3>{selectedLocation.city}</h3>
               <strong>{selectedLocation.type}</strong>

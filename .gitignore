@@ -42,3 +42,5 @@ yarn-error.log*
 # local preview logs
 /.devserver.log
 /.devserver-error.log
+/.next-server.log
+/.next-server-error.log
