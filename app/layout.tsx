@@ -20,13 +20,14 @@ export async function generateMetadata(): Promise<Metadata> {
     .split(",")[0]
     .trim()
     .toLowerCase();
-  const allowedHosts = new Set([
-    "localhost:3005",
-    "127.0.0.1:3005",
-    "agromont-crna-gora.ennnyy.chatgpt.site",
-  ]);
-  const host = allowedHosts.has(requestedHost) ? requestedHost : "agromont-crna-gora.ennnyy.chatgpt.site";
-  const base = new URL(host === "localhost:3005" || host === "127.0.0.1:3005" ? `http://${host}` : `https://${host}`);
+
+  const isLocal = requestedHost === "localhost:3005" || requestedHost === "127.0.0.1:3005";
+  const isVercel = requestedHost.endsWith(".vercel.app");
+  const isKnownHost = requestedHost === "agromont-crna-gora.ennnyy.chatgpt.site";
+  const host = isLocal || isVercel || isKnownHost
+    ? requestedHost
+    : "agromont-crna-gora.ennnyy.chatgpt.site";
+  const base = new URL(isLocal ? `http://${host}` : `https://${host}`);
   const socialImage = new URL("/og.png", base).toString();
 
   return {
@@ -48,8 +49,7 @@ export async function generateMetadata(): Promise<Metadata> {
     alternates: { canonical: base },
     openGraph: {
       title: "AgroMont — Hranimo ono što raste",
-      description:
-        "Domaća proizvodnja, pouzdan program i mreža centara za poljoprivredu koja raste.",
+      description: "Domaća proizvodnja, pouzdan program i mreža centara za poljoprivredu koja raste.",
       type: "website",
       locale: "sr_ME",
       siteName: "AgroMont",
