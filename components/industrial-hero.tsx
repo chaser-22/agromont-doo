@@ -398,8 +398,8 @@ export function IndustrialHero() {
       </div>
 
       <div className="hero-tech" aria-hidden="true">
-        <span>AGM / SYSTEM 01</span>
-        <span>REALTIME MATERIAL STUDY</span>
+        <span>AGM / PRODUCTION SYSTEM</span>
+        <span>SEED · FEED · FARM · SUPPLY</span>
       </div>
       <div className="hero-index" aria-hidden="true">
         <span>42°26&apos;N</span>
