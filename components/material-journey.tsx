@@ -439,7 +439,6 @@ export function MaterialJourney() {
           markedReady = true;
           setReady(true);
         }
-        if (!reducedMotion) raf = requestAnimationFrame(render);
       };
 
       const loop = (time: number) => {
