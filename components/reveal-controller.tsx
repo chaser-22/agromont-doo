@@ -22,6 +22,7 @@ export function RevealController() {
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const mobile = window.matchMedia("(max-width: 700px)").matches;
     const revealNodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
 
     for (const node of revealNodes) {
@@ -33,7 +34,9 @@ export function RevealController() {
         node.classList.add("reveal-enhanced");
         children.forEach((child, index) => {
           child.classList.add("reveal-child");
-          child.style.setProperty("--reveal-delay", `${Math.min(index * 70, 350)}ms`);
+          const step = mobile ? 36 : 70;
+          const cap = mobile ? 144 : 350;
+          child.style.setProperty("--reveal-delay", `${Math.min(index * step, cap)}ms`);
         });
       }
 
@@ -51,8 +54,8 @@ export function RevealController() {
             }
           },
           {
-            threshold: window.innerWidth < 700 ? 0.08 : 0.14,
-            rootMargin: window.innerWidth < 700 ? "0px 0px -4%" : "0px 0px -8%",
+            threshold: mobile ? 0.04 : 0.14,
+            rootMargin: mobile ? "0px 0px 2% 0px" : "0px 0px -8%",
           },
         );
 
