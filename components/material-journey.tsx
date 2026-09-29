@@ -108,6 +108,7 @@ export function MaterialJourney() {
 
       const world = new THREE.Group();
       scene.add(world);
+      const stepEls = Array.from(rootEl.querySelectorAll<HTMLElement>(".journey-step"));
 
       const metal = new THREE.MeshStandardMaterial({
         color: 0x8d948f,
@@ -366,12 +367,26 @@ export function MaterialJourney() {
       const updateProgress = () => {
         const rect = rootEl.getBoundingClientRect();
         const viewport = Math.max(window.innerHeight, 1);
-        const screens = Math.max(0, -rect.top / viewport);
-        const nextProgress = Math.min(Math.max((screens - 1) / 3, 0), 1);
-        progress = nextProgress;
-        const nextStep = Math.min(3, Math.max(0, Math.round(screens - 1)));
+        const distance = Math.max(0, -rect.top);
+        const travelStart = viewport * 0.72;
+        const travelEnd = Math.max(rootEl.offsetHeight - viewport * 0.82, travelStart + 1);
+        progress = Math.min(Math.max((distance - travelStart) / (travelEnd - travelStart), 0), 1);
+
+        let nextStep = 0;
+        let nearest = Number.POSITIVE_INFINITY;
+        const focusLine = viewport * (mobile ? 0.46 : 0.50);
+        stepEls.forEach((step, index) => {
+          const stepRect = step.getBoundingClientRect();
+          const center = stepRect.top + stepRect.height * 0.46;
+          const delta = Math.abs(center - focusLine);
+          if (delta < nearest) {
+            nearest = delta;
+            nextStep = index;
+          }
+        });
+
         setActiveStep((current) => (current === nextStep ? current : nextStep));
-        const nextPastIntro = screens > 0.68;
+        const nextPastIntro = distance > viewport * 0.62;
         setPastIntro((current) => (current === nextPastIntro ? current : nextPastIntro));
       };
 
