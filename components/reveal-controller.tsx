@@ -2,39 +2,39 @@
 
 import { useEffect } from "react";
 
-const childRevealSelector = [
-  "h1",
-  "h2",
-  "h3",
-  "p",
-  ".section-label",
-  ".text-cta",
-  ".button",
-  ".program-media",
-  ".program-copy > div",
-  ".program-copy > a",
-  ".location-map",
-  ".location-console",
-  ".r26-regional-mark",
+const copyRevealSelector = [
+  ".r26-proof-head.reveal",
+  ".section-heading.reveal",
+  ".location-head.reveal",
+  ".r26-network-item.reveal",
+  ".r26-bridge.reveal",
+  ".r26-regional-copy.reveal",
+  ".career-copy.reveal",
+  ".contact-copy.reveal",
 ].join(",");
 
 export function RevealController() {
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const revealNodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
+    const revealNodes = Array.from(document.querySelectorAll<HTMLElement>(".r26 .reveal"));
+
+    root.classList.add("reveal-enabled");
+
+    const copyNodes = new Set(
+      Array.from(document.querySelectorAll<HTMLElement>(copyRevealSelector)),
+    );
 
     for (const node of revealNodes) {
-      const children = Array.from(node.querySelectorAll<HTMLElement>(childRevealSelector))
-        .filter((child) => child.closest(".reveal") === node)
-        .slice(0, 8);
-
-      if (children.length > 0) {
-        node.classList.add("reveal-enhanced");
-        children.forEach((child, index) => {
-          child.classList.add("reveal-child");
-          child.style.setProperty("--reveal-delay", `${Math.min(index * 70, 350)}ms`);
-        });
+      if (copyNodes.has(node)) {
+        node.classList.add("reveal-copy");
+        Array.from(node.children)
+          .filter((child): child is HTMLElement => child instanceof HTMLElement)
+          .slice(0, 6)
+          .forEach((child, index) => {
+            child.classList.add("reveal-part");
+            child.style.setProperty("--reveal-delay", `${Math.min(index * 75, 300)}ms`);
+          });
       }
 
       if (reducedMotion) node.classList.add("is-visible");
@@ -51,17 +51,19 @@ export function RevealController() {
             }
           },
           {
-            threshold: window.innerWidth < 700 ? 0.08 : 0.14,
-            rootMargin: window.innerWidth < 700 ? "0px 0px -4%" : "0px 0px -8%",
+            threshold: 0.01,
+            rootMargin: window.innerWidth <= 820
+              ? "0px 0px -8% 0px"
+              : "0px 0px -12% 0px",
           },
         );
 
-    if (revealObserver) {
-      revealNodes.forEach((node) => revealObserver.observe(node));
-    }
+    revealNodes.forEach((node) => {
+      if (revealObserver) revealObserver.observe(node);
+    });
 
     let raf = 0;
-    const update = () => {
+    const updateProgress = () => {
       raf = 0;
       const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const progress = Math.min(Math.max(window.scrollY / max, 0), 1);
@@ -69,15 +71,16 @@ export function RevealController() {
     };
 
     const onScroll = () => {
-      if (!raf) raf = requestAnimationFrame(update);
+      if (!raf) raf = requestAnimationFrame(updateProgress);
     };
 
-    update();
+    updateProgress();
     if (!reducedMotion) window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
 
     return () => {
       revealObserver?.disconnect();
+      root.classList.remove("reveal-enabled");
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
