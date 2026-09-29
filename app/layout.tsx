@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: base,
     title: {
-      default: "AgroMont — Hranimo ono što raste",
+      default: "AgroMont — Integrisani sistem proizvodnje",
       template: "%s | AgroMont",
     },
     description:
@@ -48,18 +48,18 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     alternates: { canonical: base },
     openGraph: {
-      title: "AgroMont — Hranimo ono što raste",
-      description: "Domaća proizvodnja, pouzdan program i mreža centara za poljoprivredu koja raste.",
+      title: "AgroMont — Integrisani sistem proizvodnje",
+      description: "Žitarice, stočna hrana, proizvodnja jaja, poljoprivredni centri i regionalno povezan sistem.",
       type: "website",
       locale: "sr_ME",
       siteName: "AgroMont",
       url: base,
-      images: [{ url: socialImage, width: 1736, height: 904, alt: "AgroMont — Hranimo ono što raste" }],
+      images: [{ url: socialImage, width: 1736, height: 904, alt: "AgroMont — integrisani sistem proizvodnje" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "AgroMont — Hranimo ono što raste",
-      description: "Proizvodnja. Program. Partnerstvo.",
+      title: "AgroMont — Integrisani sistem proizvodnje",
+      description: "Žitarice. Hrana. Farma. Distribucija.",
       images: [socialImage],
     },
   };
