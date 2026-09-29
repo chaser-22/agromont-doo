@@ -2026,3 +2026,63 @@ html.reveal-enabled .r26 .reveal-copy.is-visible > .reveal-part {
     transition: none !important;
   }
 }
+
+
+/* Final phone QA: product filters and cards */
+@media (max-width: 600px) {
+  .r26 .programs .filters {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    gap: 0;
+    margin: 36px -20px 34px;
+    padding: 0 20px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .r26 .programs .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .r26 .programs .filters button {
+    min-height: 48px;
+    padding-inline: 18px;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+
+  .r26 .programs .filters button:first-child {
+    border-left: 1px solid rgba(9,12,9,.18);
+  }
+
+  .r26 .program-card {
+    overflow: hidden;
+  }
+
+  .r26 .program-copy {
+    display: block;
+    min-height: 0;
+    padding: 24px 22px 26px;
+  }
+
+  .r26 .program-copy > div,
+  .r26 .program-copy > p {
+    margin-bottom: 24px;
+  }
+
+  .r26 .program-copy p {
+    display: block;
+    max-width: 44ch;
+    overflow: visible;
+    line-height: 1.65;
+  }
+
+  .r26 .program-copy a {
+    min-height: 44px;
+  }
+}
