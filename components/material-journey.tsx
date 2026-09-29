@@ -61,6 +61,7 @@ export function MaterialJourney() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [activeStep, setActiveStep] = useState(0);
+  const [pastIntro, setPastIntro] = useState(false);
 
   useEffect(() => {
     const rootEl = rootRef.current;
@@ -360,10 +361,14 @@ export function MaterialJourney() {
 
       const updateProgress = () => {
         const rect = rootEl.getBoundingClientRect();
-        const total = Math.max(rootEl.offsetHeight - window.innerHeight, 1);
-        progress = Math.min(Math.max(-rect.top / total, 0), 1);
-        const nextStep = Math.min(3, Math.floor(progress * 4.02));
+        const viewport = Math.max(window.innerHeight, 1);
+        const screens = Math.max(0, -rect.top / viewport);
+        const nextProgress = Math.min(Math.max((screens - 1) / 3, 0), 1);
+        progress = nextProgress;
+        const nextStep = Math.min(3, Math.max(0, Math.round(screens - 1)));
         setActiveStep((current) => (current === nextStep ? current : nextStep));
+        const nextPastIntro = screens > 0.68;
+        setPastIntro((current) => (current === nextPastIntro ? current : nextPastIntro));
       };
 
       const resize = () => {
@@ -501,7 +506,7 @@ export function MaterialJourney() {
         <div className="journey-haze" aria-hidden="true" />
         <div className="journey-grid" aria-hidden="true" />
 
-        <div className="journey-intro">
+        <div className={`journey-intro ${pastIntro ? "is-past" : ""}`}>
           <span className="journey-overline">AGROMONT / INTEGRISANI SISTEM</span>
           <h1 id="journey-title">
             Od sirovine
