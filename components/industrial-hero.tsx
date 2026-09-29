@@ -86,7 +86,7 @@ vec2 mapScene(vec3 p) {
   // Three poultry halls: long, clean industrial volumes with pitched roofs.
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
-    vec3 hp = p - vec3(1.35 + fi * 1.28, -0.72, -1.45 - fi * 0.48);
+    vec3 hp = p - vec3(1.15 + fi * 1.34, -0.72, -2.48);
     float hall = sdRoundBox(hp, vec3(0.52, 0.54, 2.18), 0.035);
     res = opUnion(res, vec2(hall, 3.0));
 
@@ -99,10 +99,10 @@ vec2 mapScene(vec3 p) {
     res = opUnion(res, vec2(sdBox(roofR, vec3(0.38, 0.055, 2.23)), 4.0));
 
     // Solar arrays, reflecting the actual farm's roof-mounted solar panels.
-    for (int j = 0; j < 2; j++) {
+    for (int j = 0; j < 3; j++) {
       float fj = float(j);
-      vec3 panel = hp - vec3(0.0, 0.745, -0.76 + fj * 1.42);
-      res = opUnion(res, vec2(sdBox(panel, vec3(0.34, 0.025, 0.56)), 5.0));
+      vec3 panel = hp - vec3(0.0, 0.83, -1.18 + fj * 1.18);
+      res = opUnion(res, vec2(sdBox(panel, vec3(0.38, 0.025, 0.46)), 5.0));
     }
   }
 
@@ -110,11 +110,11 @@ vec2 mapScene(vec3 p) {
   for (int i = 0; i < 4; i++) {
     float fi = float(i);
     vec3 sp = p - vec3(0.25 + fi * 0.69, -0.20 + 0.03 * mod(fi, 2.0), -3.72);
-    float body = sdCappedCylinder(sp, vec2(0.28, 0.86));
-    vec3 dome = sp - vec3(0.0, 0.91, 0.0);
-    float cap = sdEllipsoid(dome, vec3(0.29, 0.16, 0.29));
-    vec3 hopper = sp + vec3(0.0, 0.94, 0.0);
-    float coneHint = sdEllipsoid(hopper, vec3(0.24, 0.34, 0.24));
+    float body = sdCappedCylinder(sp, vec2(0.32, 1.02));
+    vec3 dome = sp - vec3(0.0, 1.08, 0.0);
+    float cap = sdEllipsoid(dome, vec3(0.33, 0.18, 0.33));
+    vec3 hopper = sp + vec3(0.0, 1.10, 0.0);
+    float coneHint = sdEllipsoid(hopper, vec3(0.27, 0.38, 0.27));
     res = opUnion(res, vec2(min(body, min(cap, coneHint)), 2.0));
 
     vec3 legA = p - vec3(0.11 + fi * 0.69, -1.03, -3.61);
@@ -219,7 +219,7 @@ void main() {
     1.05 + uPointer.y * 0.12 + uScroll * 0.10,
     7.65 - uScroll * 0.58
   );
-  vec3 ta = vec3(1.55 + uPointer.x * 0.07, -0.34 + uScroll * 0.05, -1.40);
+  vec3 ta = vec3(1.80 + uPointer.x * 0.07, -0.30 + uScroll * 0.05, -1.48);
   vec3 ww = normalize(ta - ro);
   vec3 uu = normalize(cross(ww, vec3(0.0, 1.0, 0.0)));
   vec3 vv = cross(uu, ww);
