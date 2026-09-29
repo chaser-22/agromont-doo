@@ -4,213 +4,6 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { Arrow } from "./brand";
 
-const vertexShader = `
-attribute vec2 aPosition;
-void main() {
-  gl_Position = vec4(aPosition, 0.0, 1.0);
-}
-`;
-
-const fragmentShader = `
-precision highp float;
-
-uniform vec2 uResolution;
-uniform vec2 uPointer;
-uniform float uTime;
-uniform float uScroll;
-
-#define MAX_STEPS 52
-#define MAX_DIST 18.0
-#define SURF_DIST 0.0022
-
-mat2 rot(float a) {
-  float s = sin(a);
-  float c = cos(a);
-  return mat2(c, -s, s, c);
-}
-
-float hash21(vec2 p) {
-  p = fract(p * vec2(123.34, 456.21));
-  p += dot(p, p + 45.32);
-  return fract(p.x * p.y);
-}
-
-float sdBox(vec3 p, vec3 b) {
-  vec3 q = abs(p) - b;
-  return length(max(q, 0.0)) + min(max(q.x, max(q.y, q.z)), 0.0);
-}
-
-float sdCappedCylinder(vec3 p, vec2 h) {
-  vec2 d = abs(vec2(length(p.xz), p.y)) - h;
-  return min(max(d.x, d.y), 0.0) + length(max(d, 0.0));
-}
-
-float sdTorus(vec3 p, vec2 t) {
-  vec2 q = vec2(length(p.xz) - t.x, p.y);
-  return length(q) - t.y;
-}
-
-float sdEllipsoid(vec3 p, vec3 r) {
-  float k0 = length(p / r);
-  float k1 = length(p / (r * r));
-  return k0 * (k0 - 1.0) / max(k1, 0.0001);
-}
-
-vec2 opUnion(vec2 a, vec2 b) {
-  return a.x < b.x ? a : b;
-}
-
-vec2 mapScene(vec3 p) {
-  p.xz *= rot(-0.08 - uScroll * 0.18);
-  vec2 res = vec2(100.0, 0.0);
-
-  float ground = p.y + 1.44;
-  res = opUnion(res, vec2(ground, 4.0));
-
-  vec3 core = p - vec3(0.48, -0.05, 0.28);
-  core.xz *= rot(0.18 + uTime * 0.055);
-  core.xy *= rot(-0.09 + uPointer.x * 0.035);
-  float seed = sdEllipsoid(core, vec3(0.86, 1.15, 0.84));
-  res = opUnion(res, vec2(seed, 1.0));
-
-  vec3 ringA = core;
-  ringA.yz *= rot(1.05 + uScroll * 0.25);
-  float ring = sdTorus(ringA, vec2(1.48, 0.042));
-  res = opUnion(res, vec2(ring, 2.0));
-
-  vec3 ringB = core;
-  ringB.xy *= rot(0.88 - uScroll * 0.18);
-  ringB.yz *= rot(0.34);
-  float ring2 = sdTorus(ringB, vec2(1.70, 0.018));
-  res = opUnion(res, vec2(ring2, 5.0));
-
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i) - 1.0;
-    vec3 sp = p - vec3(fi * 1.42 - 0.15, -0.54, -2.02 - abs(fi) * 0.18);
-    float cyl = sdCappedCylinder(sp, vec2(0.46, 0.88 + 0.10 * (1.0 - abs(fi))));
-    vec3 capP = sp - vec3(0.0, 0.86 + 0.10 * (1.0 - abs(fi)), 0.0);
-    float cap = sdEllipsoid(capP, vec3(0.47, 0.24, 0.47));
-    res = opUnion(res, vec2(min(cyl, cap), 3.0));
-  }
-
-  vec3 beam = p - vec3(0.05, -0.72, -1.28);
-  beam.xy *= rot(-0.18);
-  float conveyor = sdBox(beam, vec3(2.18, 0.065, 0.095));
-  res = opUnion(res, vec2(conveyor, 3.0));
-
-  return res;
-}
-
-vec3 getNormal(vec3 p) {
-  vec2 e = vec2(0.0025, 0.0);
-  float d = mapScene(p).x;
-  return normalize(vec3(
-    d - mapScene(p - e.xyy).x,
-    d - mapScene(p - e.yxy).x,
-    d - mapScene(p - e.yyx).x
-  ));
-}
-
-vec2 rayMarch(vec3 ro, vec3 rd) {
-  float dO = 0.0;
-  float material = 0.0;
-  for (int i = 0; i < MAX_STEPS; i++) {
-    vec3 p = ro + rd * dO;
-    vec2 hit = mapScene(p);
-    dO += hit.x;
-    material = hit.y;
-    if (abs(hit.x) < SURF_DIST || dO > MAX_DIST) break;
-  }
-  return vec2(dO, material);
-}
-
-vec3 materialColor(float id) {
-  if (id < 1.5) return vec3(0.94, 0.49, 0.08);
-  if (id < 2.5) return vec3(0.095, 0.115, 0.09);
-  if (id < 3.5) return vec3(0.11, 0.25, 0.15);
-  if (id < 4.5) return vec3(0.055, 0.067, 0.052);
-  return vec3(0.80, 0.58, 0.22);
-}
-
-void main() {
-  vec2 frag = gl_FragCoord.xy;
-  vec2 uv = (frag * 2.0 - uResolution.xy) / max(uResolution.y, 1.0);
-  vec2 suv = frag / max(uResolution, vec2(1.0));
-
-  vec3 bgTop = vec3(0.018, 0.032, 0.023);
-  vec3 bgBottom = vec3(0.055, 0.080, 0.054);
-  vec3 color = mix(bgBottom, bgTop, smoothstep(0.0, 1.0, suv.y));
-
-  float amberGlow = exp(-2.9 * length(uv - vec2(0.28, 0.04)));
-  color += vec3(0.25, 0.105, 0.012) * amberGlow;
-
-  vec3 ro = vec3(0.28 + uPointer.x * 0.26, 0.18 + uPointer.y * 0.12, 4.75 - uScroll * 0.42);
-  vec3 ta = vec3(0.30, -0.20 + uScroll * 0.08, -0.18);
-  vec3 ww = normalize(ta - ro);
-  vec3 uu = normalize(cross(ww, vec3(0.0, 1.0, 0.0)));
-  vec3 vv = cross(uu, ww);
-  vec3 rd = normalize(ww * 1.72 + uu * uv.x + vv * uv.y);
-
-  vec2 rm = rayMarch(ro, rd);
-  float dist = rm.x;
-  float matId = rm.y;
-
-  if (dist < MAX_DIST) {
-    vec3 p = ro + rd * dist;
-    vec3 n = getNormal(p);
-    vec3 base = materialColor(matId);
-
-    vec3 keyDir = normalize(vec3(-0.62, 0.88, 0.72));
-    vec3 rimDir = normalize(vec3(0.72, 0.35, -0.62));
-    float diff = max(dot(n, keyDir), 0.0);
-    float rim = pow(1.0 - max(dot(n, -rd), 0.0), 2.6);
-    float spec = pow(max(dot(reflect(-keyDir, n), -rd), 0.0), 38.0);
-    float secondary = max(dot(n, rimDir), 0.0) * 0.25;
-
-    color = base * (0.24 + diff * 0.88 + secondary);
-    color += vec3(1.0, 0.62, 0.22) * spec * (matId < 2.5 ? 0.48 : 0.17);
-    color += vec3(0.30, 0.44, 0.30) * rim * 0.32;
-
-    if (matId > 3.5 && matId < 4.5) {
-      vec2 gridCell = fract(p.xz * 0.72);
-      vec2 gridEdge = min(gridCell, 1.0 - gridCell);
-      float grid = 1.0 - smoothstep(0.012, 0.034, min(gridEdge.x, gridEdge.y));
-      color += vec3(0.31, 0.46, 0.27) * grid * 0.16;
-    }
-
-    float fog = 1.0 - exp(-0.035 * dist * dist);
-    color = mix(color, bgTop, fog);
-  }
-
-  vec2 dustUv = vec2(suv.x * (uResolution.x / max(uResolution.y, 1.0)), suv.y + uTime * 0.009);
-  vec2 dustCell = floor(dustUv * vec2(68.0, 50.0));
-  float dustHash = hash21(dustCell);
-  vec2 local = fract(dustUv * vec2(68.0, 50.0)) - 0.5;
-  float dust = smoothstep(0.07, 0.0, length(local)) * step(0.965, dustHash);
-  color += vec3(0.96, 0.64, 0.24) * dust * 0.36;
-
-  float vignette = smoothstep(1.45, 0.22, length(uv * vec2(0.72, 0.86)));
-  color *= 0.70 + 0.30 * vignette;
-  float grain = hash21(frag + fract(uTime) * 73.0) - 0.5;
-  color += grain * 0.012;
-  color = pow(max(color, 0.0), vec3(0.4545));
-
-  gl_FragColor = vec4(color, 1.0);
-}
-`;
-
-function compileShader(gl: WebGLRenderingContext, type: number, source: string) {
-  const shader = gl.createShader(type);
-  if (!shader) return null;
-  gl.shaderSource(shader, source);
-  gl.compileShader(shader);
-  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
-    gl.deleteShader(shader);
-    return null;
-  }
-  return shader;
-}
-
 export function IndustrialHero() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -219,138 +12,471 @@ export function IndustrialHero() {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const gl = canvas.getContext("webgl", {
-      alpha: true,
-      antialias: false,
-      depth: false,
-      stencil: false,
-      powerPreference: "high-performance",
-      preserveDrawingBuffer: false,
-    });
-    if (!gl) return;
+    let disposed = false;
+    let sceneCleanup: (() => void) | undefined;
 
-    const vs = compileShader(gl, gl.VERTEX_SHADER, vertexShader);
-    const fs = compileShader(gl, gl.FRAGMENT_SHADER, fragmentShader);
-    if (!vs || !fs) return;
+    const boot = async () => {
+      const THREE = await import("three");
+      if (disposed) return;
 
-    const program = gl.createProgram();
-    if (!program) return;
-    gl.attachShader(program, vs);
-    gl.attachShader(program, fs);
-    gl.linkProgram(program);
-    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
-    gl.useProgram(program);
-
-    const buffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(
-      gl.ARRAY_BUFFER,
-      new Float32Array([-1, -1, 3, -1, -1, 3]),
-      gl.STATIC_DRAW,
-    );
-
-    const position = gl.getAttribLocation(program, "aPosition");
-    gl.enableVertexAttribArray(position);
-    gl.vertexAttribPointer(position, 2, gl.FLOAT, false, 0, 0);
-
-    const resolutionLocation = gl.getUniformLocation(program, "uResolution");
-    const pointerLocation = gl.getUniformLocation(program, "uPointer");
-    const timeLocation = gl.getUniformLocation(program, "uTime");
-    const scrollLocation = gl.getUniformLocation(program, "uScroll");
-
-    let active = true;
-    let pageVisible = !document.hidden;
-    let frame = 0;
-    let width = 0;
-    let height = 0;
-    let pointerX = 0;
-    let pointerY = 0;
-    let targetX = 0;
-    let targetY = 0;
-    const start = performance.now();
-    let markedReady = false;
-
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
+      const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const mobile = window.innerWidth < 760;
-      const quality = mobile ? 0.62 : 0.82;
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.35) * quality;
-      const nextWidth = Math.max(2, Math.min(1600, Math.round(rect.width * dpr)));
-      const nextHeight = Math.max(2, Math.min(1100, Math.round(rect.height * dpr)));
-      if (nextWidth === width && nextHeight === height) return;
-      width = nextWidth;
-      height = nextHeight;
-      canvas.width = width;
-      canvas.height = height;
-      gl.viewport(0, 0, width, height);
-      gl.uniform2f(resolutionLocation, width, height);
-    };
 
-    const render = (now: number) => {
-      frame = 0;
-      if (!active || !pageVisible) return;
-      resize();
-      pointerX += (targetX - pointerX) * 0.055;
-      pointerY += (targetY - pointerY) * 0.055;
-      const scroll = Math.min(Math.max(window.scrollY / Math.max(window.innerHeight, 1), 0), 1.25);
-      gl.uniform2f(pointerLocation, pointerX, pointerY);
-      gl.uniform1f(timeLocation, reducedMotion ? 0.0 : (now - start) / 1000);
-      gl.uniform1f(scrollLocation, reducedMotion ? 0.16 : scroll);
-      gl.drawArrays(gl.TRIANGLES, 0, 3);
-      if (!markedReady) {
-        markedReady = true;
-        setReady(true);
+      let renderer;
+      try {
+        renderer = new THREE.WebGLRenderer({
+          canvas,
+          alpha: true,
+          antialias: !mobile,
+          powerPreference: "high-performance",
+        });
+      } catch {
+        return;
       }
-      if (!reducedMotion) frame = requestAnimationFrame(render);
-    };
 
-    const ensureFrame = () => {
-      if (!frame && active && pageVisible) frame = requestAnimationFrame(render);
-    };
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.35));
+      renderer.outputColorSpace = THREE.SRGBColorSpace;
+      renderer.toneMapping = THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.12;
+      renderer.shadowMap.enabled = !mobile;
+      if (!mobile) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.setClearColor(0x07110b, 1);
 
-    const onPointerMove = (event: PointerEvent) => {
-      targetX = (event.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
-      targetY = -(event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
-      if (reducedMotion) ensureFrame();
-    };
+      const scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x07110b, mobile ? 0.060 : 0.050);
 
-    const onVisibility = () => {
-      pageVisible = !document.hidden;
-      if (pageVisible) ensureFrame();
-    };
+      const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 80);
+      const baseCamera = new THREE.Vector3(mobile ? 6.3 : 7.8, mobile ? 4.0 : 4.8, mobile ? 11.8 : 12.6);
+      const target = new THREE.Vector3(mobile ? 2.7 : 2.45, 0.8, -1.1);
+      camera.position.copy(baseCamera);
+      camera.lookAt(target);
 
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        active = entry.isIntersecting;
-        if (active) ensureFrame();
-        else if (frame) {
-          cancelAnimationFrame(frame);
-          frame = 0;
+      const root = new THREE.Group();
+      root.position.set(mobile ? 0.5 : 0.9, -1.1, -0.2);
+      scene.add(root);
+
+      const groundMaterial = new THREE.MeshStandardMaterial({
+        color: 0x101c14,
+        roughness: 0.94,
+        metalness: 0.02,
+      });
+      const wallMaterial = new THREE.MeshStandardMaterial({
+        color: 0x21472e,
+        roughness: 0.72,
+        metalness: 0.06,
+      });
+      const roofMaterial = new THREE.MeshStandardMaterial({
+        color: 0xa9aea5,
+        roughness: 0.45,
+        metalness: 0.46,
+      });
+      const metalMaterial = new THREE.MeshStandardMaterial({
+        color: 0x88918b,
+        roughness: 0.36,
+        metalness: 0.72,
+      });
+      const pipeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xb1b7b0,
+        roughness: 0.30,
+        metalness: 0.76,
+      });
+      const solarMaterial = new THREE.MeshStandardMaterial({
+        color: 0x1b5362,
+        emissive: 0x071c22,
+        emissiveIntensity: 0.28,
+        roughness: 0.20,
+        metalness: 0.72,
+      });
+      const darkMaterial = new THREE.MeshStandardMaterial({
+        color: 0x0d120f,
+        roughness: 0.74,
+        metalness: 0.20,
+      });
+      const orangeMaterial = new THREE.MeshStandardMaterial({
+        color: 0xe8931d,
+        emissive: 0x8f3d04,
+        emissiveIntensity: 0.85,
+        roughness: 0.34,
+        metalness: 0.18,
+      });
+      const eggMaterial = new THREE.MeshStandardMaterial({
+        color: 0xe8dcc1,
+        roughness: 0.58,
+        metalness: 0.0,
+      });
+
+      const ground = new THREE.Mesh(new THREE.PlaneGeometry(34, 28), groundMaterial);
+      ground.rotation.x = -Math.PI / 2;
+      ground.position.set(2.8, 0, -2.2);
+      ground.receiveShadow = true;
+      root.add(ground);
+
+      const yard = new THREE.Mesh(
+        new THREE.PlaneGeometry(12.5, 9.5),
+        new THREE.MeshStandardMaterial({ color: 0x27302a, roughness: 0.90, metalness: 0.03 }),
+      );
+      yard.rotation.x = -Math.PI / 2;
+      yard.position.set(2.6, 0.012, -0.9);
+      yard.receiveShadow = true;
+      root.add(yard);
+
+      const markAsShadowCaster = (mesh: any) => {
+        mesh.castShadow = !mobile;
+        mesh.receiveShadow = true;
+        return mesh;
+      };
+
+      const hallBodyGeometry = new THREE.BoxGeometry(2.55, 1.28, mobile ? 5.2 : 6.4);
+      const roofGeometry = new THREE.BoxGeometry(1.55, 0.11, mobile ? 5.35 : 6.55);
+      const panelGeometry = new THREE.BoxGeometry(0.92, 0.055, 1.08);
+
+      const hallCount = mobile ? 2 : 3;
+      for (let i = 0; i < hallCount; i++) {
+        const hall = new THREE.Group();
+        hall.position.set(0.15 + i * 2.85, 0.65, -3.05 - i * 0.12);
+
+        const body = markAsShadowCaster(new THREE.Mesh(hallBodyGeometry, wallMaterial));
+        body.position.y = 0.64;
+        hall.add(body);
+
+        const roofLeft = markAsShadowCaster(new THREE.Mesh(roofGeometry, roofMaterial));
+        roofLeft.rotation.z = -0.39;
+        roofLeft.position.set(-0.61, 1.48, 0);
+        hall.add(roofLeft);
+
+        const roofRight = markAsShadowCaster(new THREE.Mesh(roofGeometry, roofMaterial));
+        roofRight.rotation.z = 0.39;
+        roofRight.position.set(0.61, 1.48, 0);
+        hall.add(roofRight);
+
+        const panelCount = mobile ? 3 : 5;
+        for (let j = 0; j < panelCount; j++) {
+          const panel = new THREE.Mesh(panelGeometry, solarMaterial);
+          panel.position.set(0.72, 1.68, -1.85 + j * 0.94);
+          panel.rotation.z = 0.39;
+          hall.add(panel);
         }
-      },
-      { rootMargin: "180px" },
-    );
-    observer.observe(canvas);
 
-    const resizeObserver = new ResizeObserver(() => ensureFrame());
-    resizeObserver.observe(canvas);
-    window.addEventListener("pointermove", onPointerMove, { passive: true });
-    window.addEventListener("scroll", ensureFrame, { passive: true });
-    document.addEventListener("visibilitychange", onVisibility);
-    ensureFrame();
+        // Front ventilation / service details make each hall read as a real facility.
+        for (let j = 0; j < 3; j++) {
+          const vent = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.13, 0.13, 0.08, 18),
+            darkMaterial,
+          );
+          vent.rotation.x = Math.PI / 2;
+          vent.position.set(-0.62 + j * 0.62, 0.78, (mobile ? 5.2 : 6.4) * 0.5 + 0.05);
+          hall.add(vent);
+        }
+
+        root.add(hall);
+      }
+
+      const siloGroup = new THREE.Group();
+      siloGroup.position.set(mobile ? 3.6 : 5.2, 0, 1.15);
+      root.add(siloGroup);
+
+      const siloBodyGeometry = new THREE.CylinderGeometry(0.50, 0.50, 2.25, 28, 1, false);
+      const siloCapGeometry = new THREE.CylinderGeometry(0.02, 0.53, 0.52, 28);
+      const siloHopperGeometry = new THREE.CylinderGeometry(0.18, 0.48, 0.62, 24);
+      const legGeometry = new THREE.CylinderGeometry(0.032, 0.032, 0.88, 8);
+      const ringGeometry = new THREE.TorusGeometry(0.505, 0.014, 6, 24);
+
+      const siloCount = mobile ? 2 : 3;
+      for (let i = 0; i < siloCount; i++) {
+        const silo = new THREE.Group();
+        silo.position.x = i * 1.15;
+
+        const body = markAsShadowCaster(new THREE.Mesh(siloBodyGeometry, metalMaterial));
+        body.position.y = 2.0;
+        silo.add(body);
+
+        const cap = markAsShadowCaster(new THREE.Mesh(siloCapGeometry, metalMaterial));
+        cap.position.y = 3.38;
+        silo.add(cap);
+
+        const hopper = markAsShadowCaster(new THREE.Mesh(siloHopperGeometry, metalMaterial));
+        hopper.position.y = 0.75;
+        silo.add(hopper);
+
+        for (const x of [-0.31, 0.31]) {
+          for (const z of [-0.24, 0.24]) {
+            const leg = new THREE.Mesh(legGeometry, metalMaterial);
+            leg.position.set(x, 0.44, z);
+            silo.add(leg);
+          }
+        }
+
+        for (let r = 0; r < 6; r++) {
+          const ring = new THREE.Mesh(ringGeometry, pipeMaterial);
+          ring.rotation.x = Math.PI / 2;
+          ring.position.y = 1.15 + r * 0.36;
+          silo.add(ring);
+        }
+
+        siloGroup.add(silo);
+      }
+
+      const feedCurve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(mobile ? 4.0 : 5.5, 3.45, 1.2),
+        new THREE.Vector3(mobile ? 3.7 : 5.1, 4.05, 0.0),
+        new THREE.Vector3(mobile ? 3.0 : 4.3, 3.55, -1.55),
+        new THREE.Vector3(mobile ? 2.3 : 3.2, 2.75, -2.55),
+      ]);
+      const feedPipe = markAsShadowCaster(new THREE.Mesh(
+        new THREE.TubeGeometry(feedCurve, mobile ? 26 : 40, 0.085, 10, false),
+        pipeMaterial,
+      ));
+      root.add(feedPipe);
+
+      const flowBeads: any[] = [];
+      const flowCount = mobile ? 3 : 6;
+      const beadGeometry = new THREE.SphereGeometry(0.095, 14, 10);
+      for (let i = 0; i < flowCount; i++) {
+        const bead = new THREE.Mesh(beadGeometry, orangeMaterial);
+        flowBeads.push(bead);
+        root.add(bead);
+      }
+
+      const conveyor = new THREE.Group();
+      conveyor.position.set(mobile ? 2.3 : 2.7, 0.44, 3.0);
+      root.add(conveyor);
+
+      const belt = markAsShadowCaster(new THREE.Mesh(
+        new THREE.BoxGeometry(mobile ? 4.0 : 5.4, 0.18, 0.88),
+        darkMaterial,
+      ));
+      belt.position.y = 0.02;
+      conveyor.add(belt);
+
+      const rollerGeometry = new THREE.CylinderGeometry(0.075, 0.075, 0.82, 14);
+      const rollerCount = mobile ? 7 : 10;
+      for (let i = 0; i < rollerCount; i++) {
+        const roller = new THREE.Mesh(rollerGeometry, metalMaterial);
+        roller.rotation.x = Math.PI / 2;
+        roller.position.set(
+          -(mobile ? 1.72 : 2.42) + i * ((mobile ? 3.44 : 4.84) / (rollerCount - 1)),
+          0.15,
+          0,
+        );
+        conveyor.add(roller);
+      }
+
+      for (const x of [-(mobile ? 1.7 : 2.35), mobile ? 1.7 : 2.35]) {
+        const support = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.72, 0.12), metalMaterial);
+        support.position.set(x, -0.40, 0);
+        conveyor.add(support);
+      }
+
+      const railGeometry = new THREE.BoxGeometry(mobile ? 4.05 : 5.45, 0.07, 0.07);
+      for (const z of [-0.48, 0.48]) {
+        const rail = new THREE.Mesh(railGeometry, metalMaterial);
+        rail.position.set(0, 0.27, z);
+        conveyor.add(rail);
+      }
+
+      const eggProfile = [
+        new THREE.Vector2(0.00, -0.48),
+        new THREE.Vector2(0.22, -0.44),
+        new THREE.Vector2(0.34, -0.24),
+        new THREE.Vector2(0.38, 0.02),
+        new THREE.Vector2(0.32, 0.27),
+        new THREE.Vector2(0.19, 0.46),
+        new THREE.Vector2(0.00, 0.55),
+      ];
+      const eggGeometry = new THREE.LatheGeometry(eggProfile, 24);
+      const eggs: any[] = [];
+      const eggCount = mobile ? 5 : 8;
+      for (let i = 0; i < eggCount; i++) {
+        const egg = markAsShadowCaster(new THREE.Mesh(eggGeometry, eggMaterial));
+        egg.scale.setScalar(0.72);
+        eggs.push(egg);
+        conveyor.add(egg);
+      }
+
+      const packingBox = markAsShadowCaster(new THREE.Mesh(
+        new THREE.BoxGeometry(1.38, 1.52, 1.42),
+        wallMaterial,
+      ));
+      packingBox.position.set(mobile ? 2.00 : 2.78, 0.64, 0);
+      conveyor.add(packingBox);
+
+      const packingStripe = new THREE.Mesh(
+        new THREE.BoxGeometry(1.49, 0.16, 1.49),
+        orangeMaterial,
+      );
+      packingStripe.position.set(mobile ? 2.00 : 2.78, 0.86, 0);
+      conveyor.add(packingStripe);
+
+      const packingHead = markAsShadowCaster(new THREE.Mesh(
+        new THREE.BoxGeometry(1.08, 0.42, 1.18),
+        metalMaterial,
+      ));
+      packingHead.position.set(mobile ? 2.00 : 2.78, 1.58, 0);
+      conveyor.add(packingHead);
+
+      const inspectionWindow = new THREE.Mesh(
+        new THREE.BoxGeometry(0.82, 0.42, 0.035),
+        solarMaterial,
+      );
+      inspectionWindow.position.set(mobile ? 2.00 : 2.78, 1.18, 0.73);
+      conveyor.add(inspectionWindow);
+
+      const packLight = new THREE.PointLight(0xe8931d, 7, 4.2, 2);
+      packLight.position.set(mobile ? 1.7 : 2.5, 1.6, 1.1);
+      conveyor.add(packLight);
+
+      const hemi = new THREE.HemisphereLight(0xa7bbb0, 0x061009, mobile ? 1.65 : 1.85);
+      scene.add(hemi);
+
+      const key = new THREE.DirectionalLight(0xffe1b5, mobile ? 3.2 : 3.8);
+      key.position.set(-4.5, 9.0, 7.0);
+      key.castShadow = !mobile;
+      if (!mobile) {
+        key.shadow.mapSize.set(1024, 1024);
+        key.shadow.camera.near = 0.5;
+        key.shadow.camera.far = 32;
+        key.shadow.camera.left = -10;
+        key.shadow.camera.right = 10;
+        key.shadow.camera.top = 10;
+        key.shadow.camera.bottom = -10;
+        key.shadow.bias = -0.00035;
+      }
+      scene.add(key);
+
+      const rim = new THREE.DirectionalLight(0x7fa284, 1.25);
+      rim.position.set(8, 5, -8);
+      scene.add(rim);
+
+      const warm = new THREE.PointLight(0xe8931d, 18, 8, 2);
+      warm.position.set(mobile ? 2.8 : 4.7, 2.2, 2.2);
+      scene.add(warm);
+
+      let active = true;
+      let pageVisible = !document.hidden;
+      let raf = 0;
+      let pointerX = 0;
+      let pointerY = 0;
+      let targetX = 0;
+      let targetY = 0;
+      let scrollProgress = 0;
+      const clock = new THREE.Clock();
+      let markedReady = false;
+
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect();
+        const width = Math.max(2, Math.round(rect.width));
+        const height = Math.max(2, Math.round(rect.height));
+        renderer.setSize(width, height, false);
+        camera.aspect = width / height;
+        camera.updateProjectionMatrix();
+      };
+
+      const draw = () => {
+        resize();
+        pointerX += (targetX - pointerX) * 0.045;
+        pointerY += (targetY - pointerY) * 0.045;
+
+        const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
+        root.rotation.y = -0.055 + pointerX * 0.018;
+        root.rotation.x = pointerY * 0.006;
+
+        camera.position.set(
+          baseCamera.x + pointerX * 0.28,
+          baseCamera.y + pointerY * 0.15 + scrollProgress * 0.25,
+          baseCamera.z - scrollProgress * 0.72,
+        );
+        camera.lookAt(target.x + pointerX * 0.10, target.y, target.z - scrollProgress * 0.12);
+
+        flowBeads.forEach((bead, index) => {
+          const t = (elapsed * 0.075 + index / flowBeads.length) % 1;
+          bead.position.copy(feedCurve.getPointAt(t));
+        });
+
+        const travel = mobile ? 3.2 : 4.5;
+        eggs.forEach((egg, index) => {
+          const phase = ((index / eggs.length) + elapsed * 0.022) % 1;
+          egg.position.set(-travel * 0.5 + phase * travel, 0.46, 0);
+          egg.rotation.y = phase * Math.PI * 0.30;
+        });
+
+        renderer.render(scene, camera);
+        if (!markedReady) {
+          markedReady = true;
+          setReady(true);
+        }
+      };
+
+      const loop = () => {
+        raf = 0;
+        if (!active || !pageVisible) return;
+        draw();
+        if (!reducedMotion) raf = requestAnimationFrame(loop);
+      };
+
+      const requestFrame = () => {
+        if (!raf && active && pageVisible) raf = requestAnimationFrame(loop);
+      };
+
+      const onPointerMove = (event: PointerEvent) => {
+        targetX = (event.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
+        targetY = -(event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
+        if (reducedMotion) requestFrame();
+      };
+
+      const onScroll = () => {
+        scrollProgress = Math.min(Math.max(window.scrollY / Math.max(window.innerHeight, 1), 0), 1.1);
+        if (reducedMotion) requestFrame();
+      };
+
+      const onVisibility = () => {
+        pageVisible = !document.hidden;
+        if (pageVisible) requestFrame();
+      };
+
+      const observer = new IntersectionObserver(
+        ([entry]) => {
+          active = entry.isIntersecting;
+          if (active) requestFrame();
+          else if (raf) {
+            cancelAnimationFrame(raf);
+            raf = 0;
+          }
+        },
+        { rootMargin: "180px" },
+      );
+      observer.observe(canvas);
+
+      const resizeObserver = new ResizeObserver(() => requestFrame());
+      resizeObserver.observe(canvas);
+      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      window.addEventListener("scroll", onScroll, { passive: true });
+      document.addEventListener("visibilitychange", onVisibility);
+      onScroll();
+      requestFrame();
+
+      sceneCleanup = () => {
+        observer.disconnect();
+        resizeObserver.disconnect();
+        window.removeEventListener("pointermove", onPointerMove);
+        window.removeEventListener("scroll", onScroll);
+        document.removeEventListener("visibilitychange", onVisibility);
+        if (raf) cancelAnimationFrame(raf);
+        scene.traverse((object: any) => {
+          if (object.geometry?.dispose) object.geometry.dispose();
+          if (object.material) {
+            const materials = Array.isArray(object.material) ? object.material : [object.material];
+            materials.forEach((material: any) => material.dispose?.());
+          }
+        });
+        renderer.dispose();
+      };
+    };
+
+    void boot();
 
     return () => {
-      observer.disconnect();
-      resizeObserver.disconnect();
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("scroll", ensureFrame);
-      document.removeEventListener("visibilitychange", onVisibility);
-      if (frame) cancelAnimationFrame(frame);
-      gl.deleteBuffer(buffer);
-      gl.deleteProgram(program);
-      gl.deleteShader(vs);
-      gl.deleteShader(fs);
+      disposed = true;
+      sceneCleanup?.();
     };
   }, []);
 
@@ -359,7 +485,7 @@ export function IndustrialHero() {
       <Image
         className="hero-fallback"
         src="/images/agromont-hero.png"
-        alt="Ilustrativni prikaz savremene poljoprivredne proizvodnje, silosa i distribucije u Crnoj Gori"
+        alt="Ilustrativni prikaz AgroMont proizvodnog sistema sa silosima, farmom i pakovanjem jaja"
         fill
         priority
         sizes="100vw"
@@ -375,7 +501,7 @@ export function IndustrialHero() {
       <div className="hero-content" id="sadrzaj">
         <div className="hero-kicker reveal">
           <span className="pulse-dot" />
-          Domaća proizvodnja · Crna Gora
+          Farma Martinići · Stočna hrana Spuž
         </div>
         <h1 id="hero-title" className="reveal">
           Hranimo ono
@@ -384,7 +510,7 @@ export function IndustrialHero() {
         </h1>
         <div className="hero-bottom reveal">
           <p>
-            Proizvodnja jaja i stočne hrane, poljoprivredni program i centri koji povezuju pouzdan proizvod sa pravim savjetom.
+            Od stočne hrane u Spužu do proizvodnje jaja na farmi Martinići i poljoprivrednih centara — povezan sistem domaće proizvodnje i podrške.
           </p>
           <div className="hero-actions">
             <a className="button button-primary" href="#proizvodi">
@@ -397,13 +523,14 @@ export function IndustrialHero() {
         </div>
       </div>
 
-      <div className="hero-tech" aria-hidden="true">
-        <span>AGM / PRODUCTION SYSTEM</span>
-        <span>SEED · FEED · FARM · SUPPLY</span>
+      <div className="hero-tech hero-system" aria-hidden="true">
+        <span><b>01</b> SPUŽ · STOČNA HRANA</span>
+        <span><b>02</b> MARTINIĆI · JAJA</span>
+        <span><b>03</b> CENTRI · CRNA GORA</span>
       </div>
       <div className="hero-index" aria-hidden="true">
-        <span>42°26&apos;N</span>
-        <span>019°15&apos;E</span>
+        <span>PROIZVODNJA / PAKOVANJE</span>
+        <span>DOMAĆI LANAC</span>
       </div>
       <div className="hero-scroll" aria-hidden="true">
         <span>Skrolujte</span>

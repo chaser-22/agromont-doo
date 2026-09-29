@@ -441,6 +441,27 @@ h1, h2, h3, p { margin-top: 0; }
   gap: 8px;
 }
 
+
+.hero-system {
+  padding: 14px 0 14px 18px;
+  border-left: 1px solid rgba(255,255,255,0.14);
+  gap: 7px;
+}
+
+.hero-system span {
+  display: grid;
+  min-width: 190px;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-system b {
+  color: var(--amber);
+  font-size: 7px;
+  font-weight: 900;
+}
+
 .hero-index {
   top: 48%;
   right: 4.2vw;
