@@ -1,188 +1,176 @@
-import Image from "next/image";
 import { Brand, Arrow } from "@/components/brand";
 import { CareersSection, ContactSection } from "@/components/contact-careers";
-import { IndustrialHero } from "@/components/industrial-hero";
 import { LocationsSection } from "@/components/locations-section";
+import { MaterialJourney } from "@/components/material-journey";
 import { ProgramsSection } from "@/components/programs-section";
 import { RevealController } from "@/components/reveal-controller";
 import { SiteHeader } from "@/components/site-header";
 
-const productionSteps = [
+const systemFacts = [
   {
-    number: "01",
-    eyebrow: "Ulaz",
-    title: "Odabir sirovina",
-    text: "Provjereno porijeklo i stabilni standardi ulaza postavljaju osnovu za svaki sljedeći korak.",
+    label: "Otkup žitarica",
+    value: "50.000 t",
+    detail: "zajednički kapacitet centara u Šapcu i Kovinu objavljen 2025.",
   },
   {
-    number: "02",
-    eyebrow: "Proces",
-    title: "Kontrolisana proizvodnja",
-    text: "Precizni procesi, praćenje i odgovorno upravljanje povezuju kvalitet sa ponovljivošću.",
+    label: "Spuž",
+    value: "Stočna hrana",
+    detail: "proizvodnja koja povezuje sirovinu sa potrebama farmi i tržišta",
   },
   {
-    number: "03",
-    eyebrow: "Izlaz",
-    title: "Pouzdana distribucija",
-    text: "Od proizvodnje do partnera kroz organizovanu mrežu centara i podršku pri izboru.",
+    label: "Milići",
+    value: "400.000",
+    detail: "koka nosilja — kapacitet preuzetog kompleksa prema objavi iz 2025.",
   },
+] as const;
+
+const timeline = [
+  ["Martinići", "Farma", "Proizvodnja i pakovanje konzumnih jaja u Crnoj Gori."],
+  ["Spuž", "Fabrika", "Stočna hrana kao industrijska veza između žitarica i farmi."],
+  ["Šabac / Kovin", "Žitarice", "Regionalni otkupni centri i veća kontrola ulaza u lanac."],
+  ["Milići", "Regionalni rast", "Veliki kompleks za proizvodnju jaja preuzet 2025. godine."],
 ] as const;
 
 export default function Home() {
   return (
-    <main id="vrh">
+    <main id="vrh" className="r26">
       <a className="skip-link" href="#sadrzaj">Preskoči na sadržaj</a>
       <RevealController />
       <SiteHeader />
-      <IndustrialHero />
 
-      <section className="manifesto section-pad" id="o-nama">
-        <div className="section-label reveal"><span>01</span> AgroMont danas</div>
-        <div className="manifesto-grid">
-          <h2 className="reveal">
-            Od sigurnog porijekla<br />
-            do <em>sigurnog izbora.</em>
-          </h2>
-          <div className="manifesto-copy reveal">
-            <p className="lead">Proizvodnja, stručnost i dostupnost rade kao jedan sistem.</p>
+      <div id="sadrzaj">
+        <MaterialJourney />
+
+        <section className="r26-proof section-pad" id="o-nama" aria-labelledby="proof-title">
+          <div className="r26-proof-head reveal">
+            <div className="section-label"><span>01</span> Sistem, ne slogan</div>
+            <h2 id="proof-title">
+              AgroMont je jači kada se vidi <em>kao lanac.</em>
+            </h2>
             <p>
-              AgroMont povezuje domaću proizvodnju jaja i stočne hrane sa pažljivo biranim programom za poljoprivredu, domaćinstvo i održavanje. Partner dobija pouzdan proizvod, jasan savjet i podršku kada mu je potrebna.
+              Kompanija povezuje ulazne sirovine, proizvodnju stočne hrane, farme, pakovanje,
+              distribuciju i prodajne centre. Regionalno širenje dodatno pojačava tu logiku.
             </p>
-            <a className="text-cta" href="#proizvodnja">Pogledajte kako sistem radi <Arrow /></a>
           </div>
-        </div>
 
-        <div className="metric-rail reveal">
-          <article>
-            <span>01 / PROIZVODNJA</span>
-            <strong>#1</strong>
-            <p>Vodeća domaća pozicija u proizvodnji jaja i stočne hrane</p>
-          </article>
-          <article>
-            <span>02 / PODRŠKA</span>
-            <strong>360°</strong>
-            <p>Proizvodnja, program i stručna preporuka za gazdinstvo</p>
-          </article>
-          <article>
-            <span>03 / PARTNERSTVO</span>
-            <strong>B2B</strong>
-            <p>Kontinuirano snabdijevanje za farme, trgovce i institucionalne kupce</p>
-          </article>
-        </div>
-      </section>
-
-      <section className="production-experience" id="proizvodnja">
-        <div className="production-sticky">
-          <div className="production-media">
-            <Image
-              src="/images/agromont-hero.png"
-              alt="Ilustrativni pogled na savremene silose i poljoprivredna polja"
-              fill
-              sizes="(max-width: 900px) 100vw, 58vw"
-            />
-            <div className="production-media-shade" aria-hidden="true" />
-            <div className="production-scan" aria-hidden="true" />
-            <div className="production-coordinates" aria-hidden="true">
-              <span>PROCESS / 001</span>
-              <span>42.3436 N · 19.2183 E</span>
-            </div>
-            <div className="production-orbit" aria-hidden="true"><i /><i /><i /></div>
-            <div className="production-caption">
-              <span>Kontrolisan tok</span>
-              <strong>Od sirovine<br />do isporuke.</strong>
-            </div>
-          </div>
-        </div>
-
-        <div className="production-copy">
-          <div className="production-intro reveal">
-            <div className="section-label light"><span>02</span> Proizvodnja</div>
-            <h2>Kvalitet nije posljednja kontrola.<br /><em>On je svaki korak.</em></h2>
-            <p>Tri faze jednog sistema, povezane od ulaza sirovine do partnera.</p>
-          </div>
-          <div className="production-steps">
-            {productionSteps.map((step) => (
-              <article className="production-step reveal" key={step.number}>
-                <span className="production-step-number">{step.number}</span>
-                <div>
-                  <span className="production-step-eyebrow">{step.eyebrow}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.text}</p>
-                </div>
+          <div className="r26-fact-grid">
+            {systemFacts.map((fact, index) => (
+              <article className="r26-fact reveal" key={fact.label}>
+                <span>0{index + 1} / PODATAK</span>
+                <strong>{fact.value}</strong>
+                <h3>{fact.label}</h3>
+                <p>{fact.detail}</p>
               </article>
             ))}
           </div>
-        </div>
-      </section>
 
-      <ProgramsSection />
-      <LocationsSection />
-
-      <section className="signals section-pad" id="aktuelno">
-        <div className="section-heading reveal">
-          <div>
-            <div className="section-label"><span>05</span> Aktuelno</div>
-            <h2>Razlog više<br /><em>da svratite.</em></h2>
+          <div className="r26-source-note reveal">
+            <span>Napomena</span>
+            <p>
+              Brojke iznad su predstavljene samo tamo gdje postoje javno objavljeni podaci.
+              Vizuelni 3D tok je autorska interpretacija proizvodnog lanca, ne tehnički nacrt konkretne fabrike.
+            </p>
           </div>
-          <a className="text-cta" href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
-            Pratite AgroMont <Arrow />
-          </a>
-        </div>
+        </section>
 
-        <div className="signal-grid">
-          <article className="signal-feature reveal">
-            <div className="signal-top">
-              <span>Svakog mjeseca</span>
-              <strong>21—22</strong>
+        <section className="r26-network" aria-labelledby="network-title">
+          <div className="r26-network-sticky">
+            <div className="r26-network-head reveal">
+              <div className="section-label light"><span>02</span> Regionalni sistem</div>
+              <h2 id="network-title">Četiri tačke.<br /><em>Jedna logika.</em></h2>
             </div>
-            <div className="signal-copy">
-              <span>Za generacije koje su izgradile domaćinstva</span>
-              <h3>5% za penzionere na žitarice i koncentrate.</h3>
-              <p>Posebna pogodnost dostupna 21. i 22. svakog mjeseca u AgroMont centrima.</p>
-              <a href="#lokacije">Pronađite centar <Arrow /></a>
+
+            <div className="r26-route" aria-hidden="true">
+              <i />
+              {timeline.map((item, index) => (
+                <span key={item[0]} style={{ "--route-index": index } as React.CSSProperties}>
+                  <b>{String(index + 1).padStart(2, "0")}</b>
+                </span>
+              ))}
             </div>
-          </article>
+          </div>
 
-          <article className="signal-b2b reveal">
-            <div className="b2b-mark" aria-hidden="true">B2B</div>
-            <span>Za poslovne kupce</span>
-            <h3>Partnerstvo koje se prilagođava obimu.</h3>
-            <p>Veleprodaja, kontinuirano snabdijevanje i podrška za farme i trgovce.</p>
-            <a href="#kontakt">Započnimo razgovor <Arrow /></a>
-          </article>
-        </div>
-      </section>
+          <div className="r26-network-list">
+            {timeline.map(([place, type, description], index) => (
+              <article className="r26-network-item reveal" key={place}>
+                <span>{String(index + 1).padStart(2, "0")}</span>
+                <div>
+                  <small>{type}</small>
+                  <h3>{place}</h3>
+                </div>
+                <p>{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
 
-      <CareersSection />
-      <ContactSection />
+        <section className="r26-bridge section-pad reveal" aria-label="AgroMont pozicioniranje">
+          <p>PROIZVODNJA / DISTRIBUCIJA / PODRŠKA</p>
+          <h2>
+            Fizička infrastruktura je brend.
+            <br />
+            <em>Ne pozadina.</em>
+          </h2>
+          <a href="#proizvodi">Pogledajte program <Arrow /></a>
+        </section>
 
-      <footer className="footer">
+        <ProgramsSection />
+        <LocationsSection />
+
+        <section className="r26-regional section-pad" id="aktuelno">
+          <div className="r26-regional-copy reveal">
+            <div className="section-label"><span>05</span> Širi kontekst</div>
+            <h2>Iz Crne Gore.<br /><em>Prema regionu.</em></h2>
+            <p>
+              Javno objavljeni razvoj uključuje otkupne centre žitarica u Srbiji i preuzimanje
+              velike farme u Milićima 2025. godine. To mijenja sliku AgroMonta: sa lokalnog
+              proizvođača na regionalno povezan sistem hrane i poljoprivrede.
+            </p>
+          </div>
+          <div className="r26-regional-mark reveal" aria-hidden="true">
+            <span>ME</span>
+            <i />
+            <span>RS</span>
+            <i />
+            <span>BA</span>
+          </div>
+        </section>
+
+        <CareersSection />
+        <ContactSection />
+      </div>
+
+      <footer className="footer r26-footer">
         <div className="footer-top">
           <Brand compact />
-          <p>Proizvodnja. Program. Partnerstvo.<br />Sve što je potrebno da domaćinstvo raste.</p>
+          <p>
+            Žitarice. Hrana. Farma. Distribucija.
+            <br />
+            Jedan sistem koji povezuje proizvodnju i tržište.
+          </p>
         </div>
         <div className="footer-links">
           <div>
-            <span>Navigacija</span>
-            <a href="#o-nama">O nama</a>
-            <a href="#proizvodnja">Proizvodnja</a>
+            <span>Sistem</span>
+            <a href="#o-nama">O AgroMontu</a>
+            <a href="#proizvodnja">Proizvodni tok</a>
             <a href="#proizvodi">Program</a>
           </div>
           <div>
-            <span>Kompanija</span>
+            <span>Mreža</span>
             <a href="#lokacije">Centri</a>
-            <a href="#aktuelno">Aktuelno</a>
+            <a href="#aktuelno">Region</a>
             <a href="#karijere">Karijere</a>
           </div>
           <div>
-            <span>Povežite se</span>
+            <span>Kontakt</span>
             <a href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Instagram <Arrow /></a>
-            <a href="mailto:agromont@agro.co.me">E-mail <Arrow /></a>
+            <a href="mailto:agromont@agro.co.me">agromont@agro.co.me <Arrow /></a>
           </div>
         </div>
         <div className="footer-bottom">
           <span>© 2026 AgroMont d.o.o.</span>
-          <span>Crna Gora · 42°26&apos;N 019°15&apos;E</span>
+          <span>Crna Gora · regionalni poljoprivredni sistem</span>
           <a href="#vrh">Nazad na vrh ↑</a>
         </div>
       </footer>
