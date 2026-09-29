@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import { Brand, Arrow } from "@/components/brand";
 import { CareersSection, ContactSection } from "@/components/contact-careers";
 import { LocationsSection } from "@/components/locations-section";
@@ -83,7 +84,7 @@ export default function Home() {
             <div className="r26-route" aria-hidden="true">
               <i />
               {timeline.map((item, index) => (
-                <span key={item[0]} style={{ "--route-index": index } as React.CSSProperties}>
+                <span key={item[0]} style={{ "--route-index": index } as CSSProperties}>
                   <b>{String(index + 1).padStart(2, "0")}</b>
                 </span>
               ))}
