@@ -81,9 +81,11 @@ export function IndustrialHero() {
         metalness: 0.76,
       });
       const solarMaterial = new THREE.MeshStandardMaterial({
-        color: 0x13252b,
-        roughness: 0.28,
-        metalness: 0.56,
+        color: 0x1b5362,
+        emissive: 0x071c22,
+        emissiveIntensity: 0.28,
+        roughness: 0.20,
+        metalness: 0.72,
       });
       const darkMaterial = new THREE.MeshStandardMaterial({
         color: 0x0d120f,
@@ -126,7 +128,7 @@ export function IndustrialHero() {
 
       const hallBodyGeometry = new THREE.BoxGeometry(2.55, 1.28, mobile ? 5.2 : 6.4);
       const roofGeometry = new THREE.BoxGeometry(1.55, 0.11, mobile ? 5.35 : 6.55);
-      const panelGeometry = new THREE.BoxGeometry(0.72, 0.045, 0.88);
+      const panelGeometry = new THREE.BoxGeometry(0.92, 0.055, 1.08);
 
       const hallCount = mobile ? 2 : 3;
       for (let i = 0; i < hallCount; i++) {
@@ -150,7 +152,7 @@ export function IndustrialHero() {
         const panelCount = mobile ? 3 : 5;
         for (let j = 0; j < panelCount; j++) {
           const panel = new THREE.Mesh(panelGeometry, solarMaterial);
-          panel.position.set(0.73, 1.64, -1.85 + j * 0.92);
+          panel.position.set(0.72, 1.68, -1.85 + j * 0.94);
           panel.rotation.z = 0.39;
           hall.add(panel);
         }
@@ -240,10 +242,30 @@ export function IndustrialHero() {
       root.add(conveyor);
 
       const belt = markAsShadowCaster(new THREE.Mesh(
-        new THREE.BoxGeometry(mobile ? 4.0 : 5.4, 0.22, 0.88),
+        new THREE.BoxGeometry(mobile ? 4.0 : 5.4, 0.18, 0.88),
         darkMaterial,
       ));
+      belt.position.y = 0.02;
       conveyor.add(belt);
+
+      const rollerGeometry = new THREE.CylinderGeometry(0.075, 0.075, 0.82, 14);
+      const rollerCount = mobile ? 7 : 10;
+      for (let i = 0; i < rollerCount; i++) {
+        const roller = new THREE.Mesh(rollerGeometry, metalMaterial);
+        roller.rotation.x = Math.PI / 2;
+        roller.position.set(
+          -(mobile ? 1.72 : 2.42) + i * ((mobile ? 3.44 : 4.84) / (rollerCount - 1)),
+          0.15,
+          0,
+        );
+        conveyor.add(roller);
+      }
+
+      for (const x of [-(mobile ? 1.7 : 2.35), mobile ? 1.7 : 2.35]) {
+        const support = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.72, 0.12), metalMaterial);
+        support.position.set(x, -0.40, 0);
+        conveyor.add(support);
+      }
 
       const railGeometry = new THREE.BoxGeometry(mobile ? 4.05 : 5.45, 0.07, 0.07);
       for (const z of [-0.48, 0.48]) {
@@ -272,18 +294,36 @@ export function IndustrialHero() {
       }
 
       const packingBox = markAsShadowCaster(new THREE.Mesh(
-        new THREE.BoxGeometry(1.45, 1.25, 1.45),
+        new THREE.BoxGeometry(1.38, 1.52, 1.42),
         wallMaterial,
       ));
-      packingBox.position.set(mobile ? -2.65 : -3.55, 0.51, 0);
+      packingBox.position.set(mobile ? 2.00 : 2.78, 0.64, 0);
       conveyor.add(packingBox);
 
       const packingStripe = new THREE.Mesh(
         new THREE.BoxGeometry(1.49, 0.16, 1.49),
         orangeMaterial,
       );
-      packingStripe.position.set(mobile ? -2.65 : -3.55, 0.74, 0);
+      packingStripe.position.set(mobile ? 2.00 : 2.78, 0.86, 0);
       conveyor.add(packingStripe);
+
+      const packingHead = markAsShadowCaster(new THREE.Mesh(
+        new THREE.BoxGeometry(1.08, 0.42, 1.18),
+        metalMaterial,
+      ));
+      packingHead.position.set(mobile ? 2.00 : 2.78, 1.58, 0);
+      conveyor.add(packingHead);
+
+      const inspectionWindow = new THREE.Mesh(
+        new THREE.BoxGeometry(0.82, 0.42, 0.035),
+        solarMaterial,
+      );
+      inspectionWindow.position.set(mobile ? 2.00 : 2.78, 1.18, 0.73);
+      conveyor.add(inspectionWindow);
+
+      const packLight = new THREE.PointLight(0xe8931d, 7, 4.2, 2);
+      packLight.position.set(mobile ? 1.7 : 2.5, 1.6, 1.1);
+      conveyor.add(packLight);
 
       const hemi = new THREE.HemisphereLight(0xa7bbb0, 0x061009, mobile ? 1.65 : 1.85);
       scene.add(hemi);
