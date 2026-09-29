@@ -63,7 +63,7 @@ export function SiteHeader() {
   return (
     <>
       <header className={`site-header ${scrolled ? "is-scrolled" : ""}`}>
-        <Brand />
+        <Brand textOnly />
         <nav className="desktop-nav" aria-label="Glavna navigacija">
           {navItems.map(([label, href]) => (
             <a key={href} href={href}>{label}</a>
