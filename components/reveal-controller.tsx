@@ -2,21 +2,63 @@
 
 import { useEffect } from "react";
 
+const childRevealSelector = [
+  "h1",
+  "h2",
+  "h3",
+  "p",
+  ".section-label",
+  ".text-cta",
+  ".button",
+  ".program-media",
+  ".program-copy > div",
+  ".program-copy > a",
+  ".location-map",
+  ".location-console",
+  ".r26-regional-mark",
+].join(",");
+
 export function RevealController() {
   useEffect(() => {
     const root = document.documentElement;
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const revealNodes = Array.from(document.querySelectorAll<HTMLElement>(".reveal"));
 
-    const revealObserver = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (entry.isIntersecting) entry.target.classList.add("is-visible");
-        }
-      },
-      { threshold: 0.12, rootMargin: "0px 0px -6%" },
-    );
+    for (const node of revealNodes) {
+      const children = Array.from(node.querySelectorAll<HTMLElement>(childRevealSelector))
+        .filter((child) => child.closest(".reveal") === node)
+        .slice(0, 8);
 
-    document.querySelectorAll(".reveal").forEach((node) => revealObserver.observe(node));
+      if (children.length > 0) {
+        node.classList.add("reveal-enhanced");
+        children.forEach((child, index) => {
+          child.classList.add("reveal-child");
+          child.style.setProperty("--reveal-delay", `${Math.min(index * 70, 350)}ms`);
+        });
+      }
+
+      if (reducedMotion) node.classList.add("is-visible");
+    }
+
+    const revealObserver = reducedMotion
+      ? null
+      : new IntersectionObserver(
+          (entries, observer) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              entry.target.classList.add("is-visible");
+              observer.unobserve(entry.target);
+            }
+          },
+          {
+            threshold: window.innerWidth < 700 ? 0.08 : 0.14,
+            rootMargin: window.innerWidth < 700 ? "0px 0px -4%" : "0px 0px -8%",
+          },
+        );
+
+    if (revealObserver) {
+      revealNodes.forEach((node) => revealObserver.observe(node));
+    }
 
     let raf = 0;
     const update = () => {
@@ -24,14 +66,6 @@ export function RevealController() {
       const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
       const progress = Math.min(Math.max(window.scrollY / max, 0), 1);
       root.style.setProperty("--page-progress", progress.toFixed(4));
-
-      const production = document.querySelector<HTMLElement>(".production-experience");
-      if (production) {
-        const rect = production.getBoundingClientRect();
-        const distance = Math.max(production.offsetHeight - window.innerHeight, 1);
-        const sectionProgress = Math.min(Math.max(-rect.top / distance, 0), 1);
-        root.style.setProperty("--production-progress", sectionProgress.toFixed(4));
-      }
     };
 
     const onScroll = () => {
@@ -43,7 +77,7 @@ export function RevealController() {
     window.addEventListener("resize", onScroll, { passive: true });
 
     return () => {
-      revealObserver.disconnect();
+      revealObserver?.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);

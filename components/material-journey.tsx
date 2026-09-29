@@ -76,7 +76,8 @@ export function MaterialJourney() {
       if (disposed) return;
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const mobile = window.innerWidth < 820;
+      const mobile = window.matchMedia("(max-width: 819px)").matches;
+      const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
 
       let renderer: any;
       try {
@@ -90,7 +91,7 @@ export function MaterialJourney() {
         return;
       }
 
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, mobile ? 1 : 1.35));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 0.85 : mobile ? 1 : 1.35));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.06;
@@ -186,7 +187,7 @@ export function MaterialJourney() {
       hopperGroup.add(hopperNeck);
 
       const grainGeometry = new THREE.SphereGeometry(0.07, 8, 6);
-      const grainCount = mobile ? 90 : 180;
+      const grainCount = lowPower ? 54 : mobile ? 90 : 180;
       const grainMesh = new THREE.InstancedMesh(grainGeometry, grainMat, grainCount);
       const dummy = new THREE.Object3D();
       const grainSeed: Array<{ x: number; y: number; z: number; s: number; phase: number }> = [];
@@ -234,7 +235,7 @@ export function MaterialJourney() {
       processGroup.add(auger);
 
       const pelletGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.13, 8);
-      const pelletCount = mobile ? 36 : 72;
+      const pelletCount = lowPower ? 24 : mobile ? 36 : 72;
       const pellets = new THREE.InstancedMesh(pelletGeometry, amber, pelletCount);
       processGroup.add(pellets);
 
@@ -244,7 +245,7 @@ export function MaterialJourney() {
       world.add(eggGroup);
 
       const rollerGeometry = new THREE.CylinderGeometry(0.085, 0.085, 1.05, 14);
-      for (let i = 0; i < (mobile ? 9 : 15); i++) {
+      for (let i = 0; i < (lowPower ? 7 : mobile ? 9 : 15); i++) {
         const roller = new THREE.Mesh(rollerGeometry, metal);
         roller.rotation.x = Math.PI / 2;
         roller.position.set(-1.8 + i * 0.27, -0.30, 0);
@@ -253,7 +254,7 @@ export function MaterialJourney() {
 
       const eggGeometry = createEggGeometry(THREE);
       const eggs: any[] = [];
-      for (let i = 0; i < (mobile ? 5 : 8); i++) {
+      for (let i = 0; i < (lowPower ? 4 : mobile ? 5 : 8); i++) {
         const egg = cast(new THREE.Mesh(eggGeometry, cream));
         egg.scale.setScalar(0.44);
         egg.position.y = 0.10;
@@ -357,6 +358,9 @@ export function MaterialJourney() {
       let targetX = 0;
       let targetY = 0;
       let markedReady = false;
+      let lastRenderTime = 0;
+      let canvasWidth = 0;
+      let canvasHeight = 0;
       const clock = new THREE.Clock();
 
       const updateProgress = () => {
@@ -375,6 +379,9 @@ export function MaterialJourney() {
         const rect = canvas.getBoundingClientRect();
         const width = Math.max(2, Math.round(rect.width));
         const height = Math.max(2, Math.round(rect.height));
+        if (width === canvasWidth && height === canvasHeight) return;
+        canvasWidth = width;
+        canvasHeight = height;
         renderer.setSize(width, height, false);
         camera.aspect = width / height;
         camera.updateProjectionMatrix();
@@ -384,7 +391,6 @@ export function MaterialJourney() {
         raf = 0;
         if (!visible || !pageVisible) return;
         resize();
-        updateProgress();
 
         pointerX += (targetX - pointerX) * 0.045;
         pointerY += (targetY - pointerY) * 0.045;
@@ -433,11 +439,23 @@ export function MaterialJourney() {
           markedReady = true;
           setReady(true);
         }
-        if (!reducedMotion) raf = requestAnimationFrame(render);
+      };
+
+      const loop = (time: number) => {
+        raf = 0;
+        if (!visible || !pageVisible) return;
+        const minFrameGap = lowPower ? 32 : mobile ? 24 : 0;
+        if (!minFrameGap || time - lastRenderTime >= minFrameGap) {
+          lastRenderTime = time;
+          render();
+        }
+        if (!reducedMotion) raf = requestAnimationFrame(loop);
       };
 
       const ensureFrame = () => {
-        if (!raf && visible && pageVisible) raf = requestAnimationFrame(render);
+        if (!raf && visible && pageVisible) {
+          raf = reducedMotion ? requestAnimationFrame(() => render()) : requestAnimationFrame(loop);
+        }
       };
 
       const onPointerMove = (event: PointerEvent) => {
@@ -468,7 +486,7 @@ export function MaterialJourney() {
 
       const resizeObserver = new ResizeObserver(() => ensureFrame());
       resizeObserver.observe(canvas);
-      window.addEventListener("pointermove", onPointerMove, { passive: true });
+      if (!mobile) window.addEventListener("pointermove", onPointerMove, { passive: true });
       window.addEventListener("scroll", onScroll, { passive: true });
       document.addEventListener("visibilitychange", onVisibility);
       updateProgress();
@@ -477,7 +495,7 @@ export function MaterialJourney() {
       cleanup = () => {
         observer.disconnect();
         resizeObserver.disconnect();
-        window.removeEventListener("pointermove", onPointerMove);
+        if (!mobile) window.removeEventListener("pointermove", onPointerMove);
         window.removeEventListener("scroll", onScroll);
         document.removeEventListener("visibilitychange", onVisibility);
         if (raf) cancelAnimationFrame(raf);
