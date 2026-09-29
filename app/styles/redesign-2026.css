@@ -212,6 +212,14 @@ body {
   top: 50%;
   width: min(690px, 50vw);
   transform: translateY(-45%);
+  opacity: 1;
+  transition: opacity .42s ease, filter .42s ease;
+}
+
+.journey-intro.is-past {
+  opacity: 0;
+  filter: blur(7px);
+  pointer-events: none;
 }
 
 .journey-overline {
