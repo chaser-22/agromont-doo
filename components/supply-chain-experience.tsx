@@ -22,7 +22,7 @@ const stages = [
     code: "03",
     eyebrow: "Martinići / farma",
     title: "Industrija prelazi u farmu.",
-    body: "Poultry infrastruktura, skladištenje i kontinuirana ishrana povezuju proizvodnju hrane sa proizvodnjom konzumnih jaja.",
+    body: "Živinarska infrastruktura, skladištenje i kontinuirana ishrana povezuju proizvodnju hrane sa proizvodnjom konzumnih jaja.",
     fact: "Martinići · proizvodnja i pakovanje konzumnih jaja",
   },
   {
