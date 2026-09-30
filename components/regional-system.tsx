@@ -43,7 +43,7 @@ export function RegionalSystem() {
   return (
     <section className="regional-system" id="region" aria-labelledby="regional-system-title">
       <div className="regional-system-copy reveal">
-        <span className="industrial-kicker">MREŽA / ME · RS · BA</span>
+        <span className="industrial-kicker">03 / MREŽA / ME · RS · BA</span>
         <h2 id="regional-system-title">
           Proizvodnja ima lokaciju.
           <br />
