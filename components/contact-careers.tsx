@@ -96,8 +96,8 @@ export function CareersSection() {
       <section className="careers section-pad" id="karijere">
         <div className="career-copy reveal">
           <div className="section-label light"><span>06</span> Karijere</div>
-          <h2>Širimo tim.<br /><em>Rastimo zajedno.</em></h2>
-          <p>Tražimo ljude koji razumiju tržište, poštuju proizvodnju i žele da naprave mjerljiv pomak.</p>
+          <h2>Tražimo ljude koji<br /><em>poznaju posao.</em></h2>
+          <p>Tražimo ljude koji razumiju tržište, proizvodnju i potrebe kupaca.</p>
           <button ref={openButtonRef} className="button button-primary" type="button" onClick={() => openDialog()}>
             Pošaljite CV <Arrow />
           </button>
@@ -224,8 +224,8 @@ export function ContactSection() {
     <section className="contact section-pad" id="kontakt">
       <div className="contact-copy reveal">
         <div className="section-label"><span>07</span> Kontakt</div>
-        <h2>Recite nam<br /><em>šta treba da raste.</em></h2>
-        <p>Povezaćemo vas sa pravim centrom ili članom tima za proizvod, dostupnost, B2B saradnju ili drugo pitanje.</p>
+        <h2>Počnimo od<br /><em>onoga što vam treba.</em></h2>
+        <p>Za proizvode, dostupnost, B2B saradnju ili drugo pitanje povezaćemo vas sa pravim centrom ili članom tima.</p>
         <div className="contact-direct">
           <span>Direktan kontakt</span>
           <a href="mailto:agromont@agro.co.me">agromont@agro.co.me <Arrow /></a>
