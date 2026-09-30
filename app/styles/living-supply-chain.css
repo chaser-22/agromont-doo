@@ -1876,3 +1876,130 @@ html.reveal-enabled .r26.lsc .reveal-stagger > .reveal-part {
 .supply-stage-copy article {
   pointer-events: none;
 }
+
+
+/* Accessible non-WebGL / reduced-motion production narrative */
+.supply-fallback-story {
+  display: none;
+}
+
+.supply-experience.is-fallback {
+  min-height: auto;
+}
+
+.supply-experience.is-fallback .supply-sticky {
+  position: relative;
+  height: 100svh;
+  min-height: 620px;
+}
+
+.supply-experience.is-fallback .supply-stage-index,
+.supply-experience.is-fallback .supply-stage-copy,
+.supply-experience.is-fallback .supply-progress {
+  display: none;
+}
+
+.supply-experience.is-fallback .supply-intro {
+  opacity: 1;
+  filter: none;
+  transform: translateY(-47%);
+}
+
+.supply-experience.is-fallback .supply-fallback-story {
+  display: grid;
+  padding: 0 var(--lsc-gutter) 72px;
+  background: #151a16;
+  color: #fff;
+}
+
+.supply-fallback-story article {
+  width: min(100%, 920px);
+  padding: 42px 0 46px;
+  border-top: 1px solid rgba(255,255,255,.14);
+}
+
+.supply-fallback-story article > span {
+  color: var(--lsc-amber);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+
+.supply-fallback-story h2 {
+  max-width: 12ch;
+  margin: 14px 0 16px;
+  color: #fff;
+  font-size: clamp(38px, 5.3vw, 70px);
+  line-height: .94;
+  letter-spacing: -.055em;
+}
+
+.supply-fallback-story p {
+  max-width: 50ch;
+  margin: 0 0 14px;
+  color: rgba(255,255,255,.66);
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.supply-fallback-story small {
+  display: block;
+  max-width: 56ch;
+  color: rgba(255,255,255,.4);
+  font-size: 9px;
+  line-height: 1.55;
+}
+
+@media (max-width: 760px) {
+  .supply-experience.is-fallback .supply-sticky {
+    min-height: 620px;
+  }
+
+  .supply-experience.is-fallback .supply-intro {
+    transform: none;
+  }
+
+  .supply-experience.is-fallback .supply-fallback-story {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .supply-fallback-story article {
+    padding: 32px 0 36px;
+  }
+
+  .supply-fallback-story h2 {
+    font-size: 36px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .supply-experience {
+    min-height: auto;
+  }
+
+  .supply-experience .supply-sticky {
+    position: relative;
+    height: 100svh;
+    min-height: 620px;
+  }
+
+  .supply-experience .supply-stage-index,
+  .supply-experience .supply-stage-copy,
+  .supply-experience .supply-progress {
+    display: none;
+  }
+
+  .supply-experience .supply-intro,
+  .supply-experience .supply-intro.is-past {
+    opacity: 1 !important;
+    filter: none !important;
+  }
+
+  .supply-experience .supply-fallback-story {
+    display: grid;
+    padding: 0 var(--lsc-gutter) 72px;
+    background: #151a16;
+  }
+}
