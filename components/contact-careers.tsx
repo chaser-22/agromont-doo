@@ -89,8 +89,7 @@ export function CareersSection() {
   };
 
   const jobs = [
-    ["Marketing koordinator", "Jedna pozicija", "AgroMont sistem"],
-    ["Agronom", "Više pozicija", "Golubovci / Tuzi"],
+    ["Prodavac u poljoprivrednoj apoteci", "Oglas objavljen 17.09.2026.", "Cetinje"],
   ] as const;
 
   return (
@@ -117,7 +116,7 @@ export function CareersSection() {
             </button>
           ))}
           <p className="jobs-note">
-            Ne vidite svoju poziciju? Pošaljite otvorenu prijavu na{" "}
+            Aktuelni oglasi se mijenjaju. Otvorenu prijavu možete poslati na{" "}
             <a href="mailto:agromont@agro.co.me">agromont@agro.co.me</a>
           </p>
         </div>
@@ -150,8 +149,7 @@ export function CareersSection() {
             <label>Pozicija
               <select name="position" value={careerPosition} onChange={(event) => setCareerPosition(event.target.value)}>
                 <option>Otvorena prijava</option>
-                <option>Marketing koordinator</option>
-                <option>Agronom</option>
+                <option>Prodavac u poljoprivrednoj apoteci</option>
               </select>
             </label>
           </div>

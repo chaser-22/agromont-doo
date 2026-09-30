@@ -16,7 +16,7 @@ export function ProgramsSection() {
     <section className="programs section-pad" id="proizvodi">
       <div className="section-heading reveal">
         <div>
-          <div className="section-label"><span>03</span> Naš program</div>
+          <div className="section-label"><span>04</span> Program i proizvodi</div>
           <h2>Program za<br /><em>svaki dio posla.</em></h2>
         </div>
         <p>

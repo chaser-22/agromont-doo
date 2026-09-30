@@ -1,63 +1,68 @@
-import type { CSSProperties } from "react";
-import { Brand, Arrow } from "@/components/brand";
+import { Arrow, Brand } from "@/components/brand";
 import { CareersSection, ContactSection } from "@/components/contact-careers";
 import { LocationsSection } from "@/components/locations-section";
-import { MaterialJourney } from "@/components/material-journey";
 import { ProgramsSection } from "@/components/programs-section";
+import { RegionalSystem } from "@/components/regional-system";
 import { RevealController } from "@/components/reveal-controller";
 import { SiteHeader } from "@/components/site-header";
+import { SupplyChainExperience } from "@/components/supply-chain-experience";
 
-const systemFacts = [
+const operatingFacts = [
   {
-    label: "Otkup žitarica",
+    code: "01",
     value: "50.000 t",
-    detail: "zajednički kapacitet centara u Šapcu i Kovinu objavljen 2025.",
+    label: "Šabac + Kovin",
+    detail: "Ukupni kapacitet otkupnih centara žitarica prema promotivnoj objavi iz 2025.",
   },
   {
-    label: "Spuž",
-    value: "Stočna hrana",
-    detail: "proizvodnja koja povezuje sirovinu sa potrebama farmi i tržišta",
+    code: "02",
+    value: "Spuž",
+    label: "Stočna hrana",
+    detail: "Proizvodnja koja povezuje sirovinu sa farmama i tržištem.",
   },
   {
-    label: "Milići",
+    code: "03",
     value: "400.000",
-    detail: "koka nosilja — kapacitet preuzetog kompleksa prema objavi iz 2025.",
+    label: "Milići",
+    detail: "Kapacitet koka nosilja u preuzetom kompleksu prema promotivnoj objavi iz 2025.",
   },
-] as const;
-
-const timeline = [
-  ["Martinići", "Farma", "Proizvodnja i pakovanje konzumnih jaja u Crnoj Gori."],
-  ["Spuž", "Fabrika", "Stočna hrana kao industrijska veza između žitarica i farmi."],
-  ["Šabac / Kovin", "Žitarice", "Regionalni otkupni centri i veća kontrola ulaza u lanac."],
-  ["Milići", "Regionalni rast", "Veliki kompleks za proizvodnju jaja preuzet 2025. godine."],
+  {
+    code: "04",
+    value: "2025",
+    label: "Berane + Golubovci",
+    detail: "Godina otvaranja novih poljoprivrednih centara potvrđena javnim objavama.",
+  },
 ] as const;
 
 export default function Home() {
   return (
-    <main id="vrh" className="r26">
+    <main id="vrh" className="r26 lsc">
       <a className="skip-link" href="#sadrzaj">Preskoči na sadržaj</a>
       <RevealController />
       <SiteHeader />
 
       <div id="sadrzaj">
-        <MaterialJourney />
+        <SupplyChainExperience />
 
-        <section className="r26-proof section-pad" id="o-nama" aria-labelledby="proof-title">
-          <div className="r26-proof-head reveal">
-            <div className="section-label"><span>01</span> Sistem, ne slogan</div>
-            <h2 id="proof-title">
-              AgroMont se najbolje razumije <em>kao povezan lanac.</em>
+        <section className="system-proof section-pad" id="o-nama" aria-labelledby="system-proof-title">
+          <div className="system-proof-intro reveal">
+            <span className="industrial-kicker">02 / SISTEM / INFRASTRUKTURA / TRŽIŠTE</span>
+            <h2 id="system-proof-title">
+              Nije jedna farma.
+              <br />
+              <em>Nije jedna fabrika.</em>
             </h2>
             <p>
-              Kompanija povezuje sirovine, proizvodnju stočne hrane, farme, pakovanje,
-              distribuciju i prodajne centre. Regionalno širenje isti lanac povezuje sa širim tržištem.
+              AGROMONT povezuje žitarice, stočnu hranu, živinarsku proizvodnju, sortiranje,
+              pakovanje, distribuciju i poljoprivredne centre. Vrijednost sistema je u vezi
+              između tih tačaka.
             </p>
           </div>
 
-          <div className="r26-fact-grid">
-            {systemFacts.map((fact, index) => (
-              <article className="r26-fact reveal" key={fact.label}>
-                <span>0{index + 1} / PODATAK</span>
+          <div className="system-proof-facts">
+            {operatingFacts.map((fact) => (
+              <article className="system-proof-fact reveal" key={fact.code}>
+                <span>{fact.code}</span>
                 <strong>{fact.value}</strong>
                 <h3>{fact.label}</h3>
                 <p>{fact.detail}</p>
@@ -65,113 +70,67 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="r26-source-note reveal">
-            <span>Napomena</span>
+          <div className="system-proof-note reveal">
+            <span>METODOLOGIJA</span>
             <p>
-              Brojke iznad su predstavljene samo tamo gdje postoje javno objavljeni podaci.
-              Vizuelni 3D tok je autorska interpretacija proizvodnog lanca, ne tehnički nacrt konkretne fabrike.
+              Vizuelni prikaz proizvodnje je autorska interpretacija poslovnog sistema, a ne
+              tehnički nacrt konkretne fabrike. Kapaciteti se navode samo tamo gdje postoje
+              javno objavljeni podaci i zadržavaju kontekst izvora.
             </p>
           </div>
         </section>
 
-        <section className="r26-network" aria-labelledby="network-title">
-          <div className="r26-network-sticky">
-            <div className="r26-network-head reveal">
-              <div className="section-label light"><span>02</span> Regionalni sistem</div>
-              <h2 id="network-title">Četiri tačke.<br /><em>Jedna logika.</em></h2>
-            </div>
-
-            <div className="r26-route" aria-hidden="true">
-              <i />
-              {timeline.map((item, index) => (
-                <span key={item[0]} style={{ "--route-index": index } as CSSProperties}>
-                  <b>{String(index + 1).padStart(2, "0")}</b>
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="r26-network-list">
-            {timeline.map(([place, type, description], index) => (
-              <article className="r26-network-item reveal" key={place}>
-                <span>{String(index + 1).padStart(2, "0")}</span>
-                <div>
-                  <small>{type}</small>
-                  <h3>{place}</h3>
-                </div>
-                <p>{description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="r26-bridge section-pad reveal" aria-label="AgroMont pozicioniranje">
-          <p>PROIZVODNJA / PAKOVANJE / DISTRIBUCIJA</p>
+        <section className="industrial-statement reveal" aria-label="AgroMont pozicioniranje">
+          <span>OD MATERIJALA DO TRŽIŠTA</span>
           <h2>
-            Proizvodnja se ne završava na farmi.
+            Fizička infrastruktura
             <br />
-            <em>Nastavlja se do tržišta.</em>
+            postaje <em>poslovna mreža.</em>
           </h2>
-          <a href="#proizvodi">Istražite program <Arrow /></a>
+          <a href="#region">Pogledajte regionalni sistem <Arrow /></a>
         </section>
+
+        <RegionalSystem />
 
         <ProgramsSection />
         <LocationsSection />
-
-        <section className="r26-regional section-pad" id="aktuelno">
-          <div className="r26-regional-copy reveal">
-            <div className="section-label"><span>05</span> Širi kontekst</div>
-            <h2>Iz Crne Gore.<br /><em>Povezano sa regionom.</em></h2>
-            <p>
-              Javno objavljeni razvoj uključuje otkupne centre žitarica u Srbiji i preuzimanje
-              velike farme u Milićima 2025. godine. Time se domaća proizvodnja povezuje sa širim
-              regionalnim lancem hrane i poljoprivrede.
-            </p>
-          </div>
-          <div className="r26-regional-mark reveal" aria-hidden="true">
-            <span>ME</span>
-            <i />
-            <span>RS</span>
-            <i />
-            <span>BA</span>
-          </div>
-        </section>
-
         <CareersSection />
         <ContactSection />
       </div>
 
-      <footer className="footer r26-footer">
+      <footer className="footer r26-footer lsc-footer">
         <div className="footer-top">
           <Brand textOnly />
           <p>
-            Žitarice. Hrana. Farma. Distribucija.
+            Žitarice. Hrana. Farma. Sortiranje. Distribucija.
             <br />
-            Jedan sistem koji povezuje proizvodnju i tržište.
+            Jedan sistem od materijala do tržišta.
           </p>
         </div>
         <div className="footer-links">
           <div>
             <span>Sistem</span>
-            <a href="#o-nama">O AgroMontu</a>
             <a href="#proizvodnja">Proizvodni tok</a>
-            <a href="#proizvodi">Program</a>
+            <a href="#o-nama">Infrastruktura</a>
+            <a href="#region">Regionalna mreža</a>
           </div>
           <div>
-            <span>Mreža</span>
+            <span>Program</span>
+            <a href="#proizvodi">Proizvodi</a>
             <a href="#lokacije">Centri</a>
-            <a href="#aktuelno">Region</a>
             <a href="#karijere">Karijere</a>
           </div>
           <div>
             <span>Kontakt</span>
-            <a href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">Instagram <Arrow /></a>
+            <a href="https://www.instagram.com/agromont_doo/" target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
+              Instagram <Arrow />
+            </a>
             <a href="mailto:agromont@agro.co.me">agromont@agro.co.me <Arrow /></a>
           </div>
         </div>
         <div className="footer-bottom">
           <span>© 2026 AgroMont d.o.o.</span>
-          <span>Crna Gora · regionalni poljoprivredni sistem</span>
+          <span>Crna Gora · regionalni poljoprivredno-industrijski sistem</span>
           <a href="#vrh">Nazad na vrh ↑</a>
         </div>
       </footer>

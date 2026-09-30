@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { Arrow, Brand } from "./brand";
 
 const navItems = [
-  ["O nama", "#o-nama"],
+  ["Sistem", "#o-nama"],
   ["Proizvodnja", "#proizvodnja"],
+  ["Mreža", "#region"],
   ["Program", "#proizvodi"],
   ["Centri", "#lokacije"],
-  ["Karijere", "#karijere"],
 ] as const;
 
 export function SiteHeader() {
