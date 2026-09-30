@@ -33,7 +33,7 @@ export function RevealController() {
     if (!page) return;
 
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const isMobile = window.matchMedia("(max-width: 820px)").matches;
+    const isMobile = window.matchMedia("(max-width: 980px)").matches;
     root.classList.add("reveal-enabled");
 
     const observer = reducedMotion
