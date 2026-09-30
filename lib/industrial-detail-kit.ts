@@ -208,25 +208,30 @@ export function createSafetyLadder(
 
   const rungGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.42, 8);
   const rungCount = Math.max(8, Math.floor(height / 0.31));
+  const rungs = new THREE.InstancedMesh(rungGeo, material, rungCount);
+  const rungDummy = new THREE.Object3D();
   for (let i = 0; i < rungCount; i++) {
-    const rung = new THREE.Mesh(rungGeo, material);
-    rung.rotation.z = Math.PI / 2;
-    rung.position.set(0, 0.35 + i * 0.31, 0);
-    group.add(rung);
+    rungDummy.position.set(0, 0.35 + i * 0.31, 0);
+    rungDummy.rotation.set(0, 0, Math.PI / 2);
+    rungDummy.updateMatrix();
+    rungs.setMatrixAt(i, rungDummy.matrix);
   }
+  rungs.instanceMatrix.needsUpdate = true;
+  group.add(rungs);
 
   if (!options.lowPower) {
     const hoopCount = Math.max(4, Math.floor(height / 0.72));
+    const hoopGeo = new THREE.TorusGeometry(radius, 0.018, 6, 22, Math.PI * 1.06);
+    const hoops = new THREE.InstancedMesh(hoopGeo, material, hoopCount);
+    const hoopDummy = new THREE.Object3D();
     for (let i = 0; i < hoopCount; i++) {
-      const hoop = new THREE.Mesh(
-        new THREE.TorusGeometry(radius, 0.018, 6, 22, Math.PI * 1.06),
-        material,
-      );
-      hoop.rotation.y = Math.PI / 2;
-      hoop.rotation.z = -Math.PI / 2;
-      hoop.position.set(0, 1.1 + i * 0.72, radius * 0.54);
-      group.add(hoop);
+      hoopDummy.position.set(0, 1.1 + i * 0.72, radius * 0.54);
+      hoopDummy.rotation.set(0, Math.PI / 2, -Math.PI / 2);
+      hoopDummy.updateMatrix();
+      hoops.setMatrixAt(i, hoopDummy.matrix);
     }
+    hoops.instanceMatrix.needsUpdate = true;
+    group.add(hoops);
   }
   return group;
 }
@@ -246,6 +251,10 @@ export function createIndustrialCatwalk(
 
   const postGeo = new THREE.BoxGeometry(0.045, 0.74, 0.045);
   const railGeo = new THREE.BoxGeometry(length, 0.04, 0.04);
+  const postsPerSide = Math.max(3, Math.floor(length / 1.2)) + 1;
+  const postInstances = new THREE.InstancedMesh(postGeo, materials.galvanized, postsPerSide * 2);
+  const postDummy = new THREE.Object3D();
+  let postIndex = 0;
   for (const z of [-0.39, 0.39]) {
     const topRail = new THREE.Mesh(railGeo, materials.galvanized);
     topRail.position.set(0, 0.62, z);
@@ -255,13 +264,16 @@ export function createIndustrialCatwalk(
     midRail.position.set(0, 0.34, z);
     group.add(midRail);
 
-    const posts = Math.max(3, Math.floor(length / 1.2));
-    for (let i = 0; i <= posts; i++) {
-      const post = new THREE.Mesh(postGeo, materials.galvanized);
-      post.position.set(-length / 2 + (i / posts) * length, 0.33, z);
-      group.add(post);
+    const segments = postsPerSide - 1;
+    for (let i = 0; i < postsPerSide; i++) {
+      postDummy.position.set(-length / 2 + (i / segments) * length, 0.33, z);
+      postDummy.rotation.set(0, 0, 0);
+      postDummy.updateMatrix();
+      postInstances.setMatrixAt(postIndex++, postDummy.matrix);
     }
   }
+  postInstances.instanceMatrix.needsUpdate = true;
+  group.add(postInstances);
 
   if (!options.lowPower) {
     const trussGeo = new THREE.BoxGeometry(length, 0.045, 0.045);
@@ -318,12 +330,18 @@ export function createDetailedSilo(
   vent.position.set(-radius * 0.34, height + radius * 0.98, 0.05);
   group.add(vent);
 
-  for (const y of [height * 0.22, height * 0.47, height * 0.71, height * 0.90]) {
-    const band = new THREE.Mesh(new THREE.TorusGeometry(radius * 1.012, 0.028, 6, 56), materials.darkMetal);
-    band.rotation.x = Math.PI / 2;
-    band.position.y = y;
-    group.add(band);
-  }
+  const bandLevels = [height * 0.22, height * 0.47, height * 0.71, height * 0.90];
+  const bandGeo = new THREE.TorusGeometry(radius * 1.012, 0.028, 6, 56);
+  const bandInstances = new THREE.InstancedMesh(bandGeo, materials.darkMetal, bandLevels.length);
+  const bandDummy = new THREE.Object3D();
+  bandLevels.forEach((y, index) => {
+    bandDummy.position.set(0, y, 0);
+    bandDummy.rotation.set(Math.PI / 2, 0, 0);
+    bandDummy.updateMatrix();
+    bandInstances.setMatrixAt(index, bandDummy.matrix);
+  });
+  bandInstances.instanceMatrix.needsUpdate = true;
+  group.add(bandInstances);
 
   const ladder = createSafetyLadder(THREE, materials.darkMetal, height * 0.86, Math.max(0.34, radius * 0.33), options);
   ladder.position.set(radius + 0.05, 0.22, 0);
@@ -407,25 +425,37 @@ export function createDetailedFarmHall(
   group.add(header);
 
   const fanCount = options.lowPower ? 3 : 5;
+  const fanFrameGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.10, 24);
+  const fanCoreGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.13, 16);
+  const fanFrames = new THREE.InstancedMesh(fanFrameGeo, materials.darkMetal, fanCount);
+  const fanCores = new THREE.InstancedMesh(fanCoreGeo, materials.galvanized, fanCount);
+  const fanDummy = new THREE.Object3D();
   for (let i = 0; i < fanCount; i++) {
     const z = -width / 2 - 0.055;
     const x = -length * 0.31 + i * (length * 0.62 / Math.max(1, fanCount - 1));
-    const fanFrame = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.10, 24), materials.darkMetal);
-    fanFrame.rotation.x = Math.PI / 2;
-    fanFrame.position.set(x, 1.35, z);
-    group.add(fanFrame);
-    const fanCore = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.09, 0.13, 16), materials.galvanized);
-    fanCore.rotation.x = Math.PI / 2;
-    fanCore.position.set(x, 1.35, z - 0.01);
-    group.add(fanCore);
+    fanDummy.position.set(x, 1.35, z);
+    fanDummy.rotation.set(Math.PI / 2, 0, 0);
+    fanDummy.updateMatrix();
+    fanFrames.setMatrixAt(i, fanDummy.matrix);
+    fanDummy.position.set(x, 1.35, z - 0.01);
+    fanDummy.updateMatrix();
+    fanCores.setMatrixAt(i, fanDummy.matrix);
   }
+  fanFrames.instanceMatrix.needsUpdate = true;
+  fanCores.instanceMatrix.needsUpdate = true;
+  group.add(fanFrames, fanCores);
 
   const ridgeCount = options.lowPower ? 2 : 5;
+  const ridgeGeo = new THREE.BoxGeometry(0.8, 0.18, 0.36);
+  const ridgeInstances = new THREE.InstancedMesh(ridgeGeo, materials.darkMetal, ridgeCount);
+  const ridgeDummy = new THREE.Object3D();
   for (let i = 0; i < ridgeCount; i++) {
-    const ridgeVent = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.18, 0.36), materials.darkMetal);
-    ridgeVent.position.set(-length * 0.32 + i * (length * 0.64 / Math.max(1, ridgeCount - 1)), 3.95, 0);
-    group.add(ridgeVent);
+    ridgeDummy.position.set(-length * 0.32 + i * (length * 0.64 / Math.max(1, ridgeCount - 1)), 3.95, 0);
+    ridgeDummy.updateMatrix();
+    ridgeInstances.setMatrixAt(i, ridgeDummy.matrix);
   }
+  ridgeInstances.instanceMatrix.needsUpdate = true;
+  group.add(ridgeInstances);
 
   const feedPipe = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, length * 0.92, 10), materials.galvanized);
   feedPipe.rotation.z = Math.PI / 2;
@@ -457,11 +487,16 @@ export function createDetailedTruck(
   group.add(cargo);
 
   if (!options.lowPower) {
+    const ribGeo = new THREE.BoxGeometry(0.035, 2.15, 2.30);
+    const ribs = new THREE.InstancedMesh(ribGeo, materials.darkMetal, 7);
+    const ribDummy = new THREE.Object3D();
     for (let i = 0; i < 7; i++) {
-      const rib = new THREE.Mesh(new THREE.BoxGeometry(0.035, 2.15, 2.30), materials.darkMetal);
-      rib.position.set(-0.85 + i * 0.72, 1.9, 0);
-      group.add(rib);
+      ribDummy.position.set(-0.85 + i * 0.72, 1.9, 0);
+      ribDummy.updateMatrix();
+      ribs.setMatrixAt(i, ribDummy.matrix);
     }
+    ribs.instanceMatrix.needsUpdate = true;
+    group.add(ribs);
   }
 
   const cab = addShadow(
