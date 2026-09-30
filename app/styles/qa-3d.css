@@ -1,0 +1,24 @@
+
+/* Deterministic visual-QA surface. Not linked from the public site. */
+.qa-3d-shell {
+  width: 100%;
+  min-height: 100svh;
+  margin: 0;
+  overflow: hidden;
+  background: #151a16;
+}
+
+.qa-3d-shell .supply-experience.is-qa-mode {
+  min-height: 100svh;
+}
+
+.qa-3d-shell .supply-experience.is-qa-mode .supply-sticky {
+  position: relative;
+  top: auto;
+  height: 100svh;
+  min-height: 100svh;
+}
+
+.qa-3d-shell .supply-experience.is-qa-mode .supply-fallback-story {
+  display: none;
+}
