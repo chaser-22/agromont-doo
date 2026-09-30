@@ -17,7 +17,7 @@ export function ProgramsSection() {
       <div className="section-heading reveal">
         <div>
           <div className="section-label"><span>03</span> Naš program</div>
-          <h2>Od proizvodnje do<br /><em>svakodnevnog rada.</em></h2>
+          <h2>Program za<br /><em>svaki dio posla.</em></h2>
         </div>
         <p>
           Jaja, stočna hrana, žitarice, oprema i program održavanja — pregledno organizovani prema stvarnim potrebama gazdinstava i partnera.
