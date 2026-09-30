@@ -110,13 +110,6 @@ for (const profile of profiles) {
     const snapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
     milestoneSnapshots.push(snapshot);
 
-    const label = String(index).padStart(2, "0");
-    const percent = String(Math.round(progress * 100)).padStart(3, "0");
-    await page.screenshot({
-      path: path.join(profileDir, `frame-${label}-p${percent}.png`),
-      type: "png",
-    });
-
     if (snapshot.failed) {
       report.failures.push(`${profile.name}: WebGL context failed at progress ${progress}`);
     }
@@ -136,13 +129,29 @@ for (const profile of profiles) {
 
   const videoPath = path.join(profileDir, "scroll-sequence.webm");
   let screencastStarted = false;
+  let captureProgress = 0;
+  let captureIndex = 0;
+  const capturedFrameFiles = [];
+
   try {
     await page.screencast.start({
       path: videoPath,
       size: profile.viewport,
+      quality: 84,
+      onFrame: async ({ data }) => {
+        while (captureIndex < milestones.length && captureProgress >= milestones[captureIndex] - 0.0001) {
+          const label = String(captureIndex).padStart(2, "0");
+          const percent = String(Math.round(milestones[captureIndex] * 100)).padStart(3, "0");
+          const filename = `frame-${label}-p${percent}.jpg`;
+          await writeFile(path.join(profileDir, filename), data);
+          capturedFrameFiles.push(filename);
+          captureIndex += 1;
+        }
+      },
     });
     screencastStarted = true;
 
+    captureProgress = 0;
     await page.evaluate(() => window.__AGROMONT_3D_QA__.setProgress(0));
     await page.waitForTimeout(350);
 
@@ -156,6 +165,7 @@ for (const profile of profiles) {
     for (let frame = 0; frame <= frameCount; frame += 1) {
       const t = frame / frameCount;
       const eased = t * t * (3 - 2 * t);
+      captureProgress = eased;
       const snapshot = await page.evaluate(
         (value) => window.__AGROMONT_3D_QA__.setProgress(value),
         eased,
@@ -174,9 +184,16 @@ for (const profile of profiles) {
       await page.waitForTimeout(profile.isMobile ? 32 : 28);
     }
 
-    await page.waitForTimeout(450);
+    captureProgress = 1;
+    await page.waitForTimeout(650);
     await page.screencast.stop();
     screencastStarted = false;
+
+    if (captureIndex < milestones.length) {
+      report.failures.push(
+        `${profile.name}: screencast captured only ${captureIndex}/${milestones.length} milestone frames`,
+      );
+    }
 
     const finalSnapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
 
@@ -195,6 +212,7 @@ for (const profile of profiles) {
       consoleErrors,
       pageErrors,
       milestones: milestoneSnapshots,
+      capturedFrameFiles,
       motion: {
         samples: motionSamples,
         maxCameraStep,
@@ -237,7 +255,7 @@ const cards = report.profiles.map((profile) => {
     const percent = String(Math.round(progress * 100)).padStart(3, "0");
     return `
       <figure>
-        <img src="./${profile.name}/frame-${label}-p${percent}.png" alt="${profile.name} at ${percent}% progress">
+        <img src="./${profile.name}/frame-${label}-p${percent}.jpg" alt="${profile.name} at ${percent}% progress">
         <figcaption>${percent}% · stage ${profile.milestones[index]?.stage ?? "?"}</figcaption>
       </figure>`;
   }).join("");
@@ -306,7 +324,7 @@ const summary = [
   `Profiles: ${profiles.map((profile) => profile.name).join(", ")}`,
   `Result: ${report.failures.length ? `❌ ${report.failures.length} failure(s)` : "✅ structural checks passed"}`,
   "",
-  "Artifacts include a WebM scroll recording, milestone PNGs, renderer metrics JSON, and an HTML review page for each profile.",
+  "Artifacts include a WebM scroll recording, milestone JPEG frames captured from the same screencast, renderer metrics JSON, and an HTML review page for each profile.",
   "",
   ...report.failures.map((failure) => `- ${failure}`),
 ].join("\n");
