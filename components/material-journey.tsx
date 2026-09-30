@@ -547,8 +547,7 @@ export function MaterialJourney() {
             do <em>tržišta.</em>
           </h1>
           <p>
-            Jedan lanac povezuje žitarice, stočnu hranu, farme, pakovanje i distribuciju.
-            Ne prikazujemo simbol poljoprivrede — pratimo materijal kroz stvarni poslovni sistem.
+            Žitarice, stočna hrana, farme, pakovanje i distribucija povezani su u jedan proizvodni sistem.
           </p>
           <div className="journey-actions">
             <a href="#sistem">Pratite tok <span aria-hidden="true">↓</span></a>
