@@ -143,7 +143,7 @@ export default function Home() {
 
       <footer className="footer r26-footer">
         <div className="footer-top">
-          <Brand compact />
+          <Brand textOnly />
           <p>
             Žitarice. Hrana. Farma. Distribucija.
             <br />
