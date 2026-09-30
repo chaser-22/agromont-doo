@@ -49,8 +49,8 @@ export default function Home() {
               AgroMont se najbolje razumije <em>kao povezan lanac.</em>
             </h2>
             <p>
-              Kompanija povezuje ulazne sirovine, proizvodnju stočne hrane, farme, pakovanje,
-              distribuciju i prodajne centre. Regionalno širenje dodatno pojačava tu logiku.
+              Kompanija povezuje sirovine, proizvodnju stočne hrane, farme, pakovanje,
+              distribuciju i prodajne centre. Regionalno širenje isti lanac povezuje sa širim tržištem.
             </p>
           </div>
 
@@ -108,9 +108,9 @@ export default function Home() {
         <section className="r26-bridge section-pad reveal" aria-label="AgroMont pozicioniranje">
           <p>PROIZVODNJA / PAKOVANJE / DISTRIBUCIJA</p>
           <h2>
-            Fizička infrastruktura je brend.
+            Proizvodnja se ne završava na farmi.
             <br />
-            <em>Ne pozadina.</em>
+            <em>Nastavlja se do tržišta.</em>
           </h2>
           <a href="#proizvodi">Istražite program <Arrow /></a>
         </section>
@@ -124,8 +124,8 @@ export default function Home() {
             <h2>Iz Crne Gore.<br /><em>Povezano sa regionom.</em></h2>
             <p>
               Javno objavljeni razvoj uključuje otkupne centre žitarica u Srbiji i preuzimanje
-              velike farme u Milićima 2025. godine. To mijenja sliku AgroMonta: sa lokalnog
-              proizvođača na regionalno povezan sistem hrane i poljoprivrede.
+              velike farme u Milićima 2025. godine. Time se domaća proizvodnja povezuje sa širim
+              regionalnim lancem hrane i poljoprivrede.
             </p>
           </div>
           <div className="r26-regional-mark reveal" aria-hidden="true">
