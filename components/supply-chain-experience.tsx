@@ -209,6 +209,7 @@ export function SupplyChainExperience() {
       let lastFrame = 0;
       let pointerX = 0;
       let pointerY = 0;
+      let markedReady = false;
       let targetPointerX = 0;
       let targetPointerY = 0;
       const clock = new THREE.Clock();
@@ -275,7 +276,10 @@ export function SupplyChainExperience() {
         supplyScene.update(elapsed, cameraProgress);
         renderer.render(scene, camera);
 
-        if (!ready) setReady(true);
+        if (!markedReady) {
+          markedReady = true;
+          setReady(true);
+        }
       };
 
       const loop = (time: number) => {
