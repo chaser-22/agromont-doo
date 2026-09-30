@@ -36,14 +36,22 @@ export function LocationsSection() {
 
       <div className="location-stage reveal">
         <div className="location-map">
-          <iframe
-            key={selected.id}
-            src={selected.mapEmbed}
-            title={`Interaktivna mapa AgroMont centra ${selected.city}`}
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups"
-          />
+          {selected.mapEmbed ? (
+            <iframe
+              key={selected.id}
+              src={selected.mapEmbed}
+              title={`Interaktivna mapa AgroMont centra ${selected.city}`}
+              loading="lazy"
+              referrerPolicy="no-referrer"
+              sandbox="allow-scripts allow-same-origin allow-popups"
+            />
+          ) : (
+            <div className="location-map-placeholder">
+              <span>LOKACIJA / {selected.city.toUpperCase()}</span>
+              <strong>Centar je javno potvrđen.</strong>
+              <p>Precizan marker nije postavljen dok se adresa ne potvrdi iz direktnog izvora.</p>
+            </div>
+          )}
           <div className="location-crosshair" aria-hidden="true"><i /><i /></div>
           <div className="map-caption" aria-live="polite">
             <span>Aktivna lokacija</span>
@@ -75,6 +83,7 @@ export function LocationsSection() {
             <span className="location-status"><i /> Otvorena lokacija</span>
             <h3>{selected.city}</h3>
             <strong>{selected.type}</strong>
+            <small className="location-address">{selected.address}</small>
             <p>{selected.description}</p>
             <div className="location-actions">
               <a href={selected.mapLink} target="_blank" rel="noopener noreferrer" referrerPolicy="no-referrer">
