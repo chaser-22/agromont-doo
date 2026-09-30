@@ -29,9 +29,9 @@ export function LocationsSection() {
       <div className="location-head reveal">
         <div>
           <div className="section-label light"><span>04</span> AgroMont centri</div>
-          <h2>Blizu rada.<br /><em>Blizu odluke.</em></h2>
+          <h2>Program i podrška.<br /><em>Bliže gazdinstvu.</em></h2>
         </div>
-        <p>Program za farmu, baštu, domaćinstvo i održavanje — uz podršku pri izboru.</p>
+        <p>Program za farmu, baštu, domaćinstvo i održavanje, uz podršku pri izboru.</p>
       </div>
 
       <div className="location-stage reveal">

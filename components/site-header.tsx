@@ -18,18 +18,43 @@ export function SiteHeader() {
   const triggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 32);
-    onScroll();
+    let frame = 0;
+
+    const update = () => {
+      frame = 0;
+      const next = window.scrollY > 24;
+      setScrolled((current) => current === next ? current : next);
+    };
+
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update);
+    };
+
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    const desktop = window.matchMedia("(min-width: 1121px)");
+    const onBreakpoint = (event: MediaQueryListEvent) => {
+      if (event.matches) setMenuOpen(false);
+    };
+    desktop.addEventListener("change", onBreakpoint);
+    return () => desktop.removeEventListener("change", onBreakpoint);
   }, []);
 
   useEffect(() => {
     document.body.classList.toggle("menu-lock", menuOpen);
     if (!menuOpen) return () => document.body.classList.remove("menu-lock");
 
-    const focusable = menuRef.current?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])") ?? [];
-    focusable[0]?.focus();
+    const links = Array.from(
+      menuRef.current?.querySelectorAll<HTMLElement>("a[href]") ?? [],
+    );
+    links[0]?.focus();
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -39,15 +64,20 @@ export function SiteHeader() {
         return;
       }
 
-      if (event.key !== "Tab" || focusable.length === 0) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
+      if (event.key !== "Tab" || links.length === 0) return;
+      const trigger = triggerRef.current;
+      const firstLink = links[0];
+      const lastLink = links[links.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstLink && trigger) {
         event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+        trigger.focus();
+      } else if (event.shiftKey && document.activeElement === trigger) {
         event.preventDefault();
-        first.focus();
+        lastLink.focus();
+      } else if (!event.shiftKey && document.activeElement === lastLink && trigger) {
+        event.preventDefault();
+        trigger.focus();
       }
     };
 

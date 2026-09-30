@@ -17,14 +17,14 @@ export function ProgramsSection() {
       <div className="section-heading reveal">
         <div>
           <div className="section-label"><span>03</span> Naš program</div>
-          <h2>Jedan sistem.<br /><em>Mnogo načina da raste.</em></h2>
+          <h2>Program za<br /><em>svaki dio posla.</em></h2>
         </div>
         <p>
-          Od domaće proizvodnje do opreme i održavanja — ključne kategorije za svakodnevni rad gazdinstva i partnera.
+          Jaja, stočna hrana, žitarice, oprema i program održavanja — pregledno organizovani prema stvarnim potrebama gazdinstava i partnera.
         </p>
       </div>
 
-      <div className="filters reveal" aria-label="Filtriranje proizvoda">
+      <div className="filters reveal" role="group" aria-label="Filtriranje proizvoda">
         {productFilters.map((filter) => (
           <button
             type="button"
