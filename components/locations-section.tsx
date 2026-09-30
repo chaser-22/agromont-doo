@@ -28,7 +28,7 @@ export function LocationsSection() {
     <section className="locations section-pad" id="lokacije">
       <div className="location-head reveal">
         <div>
-          <div className="section-label light"><span>04</span> AgroMont centri</div>
+          <div className="section-label light"><span>05</span> AgroMont centri</div>
           <h2>Program i podrška.<br /><em>Bliže gazdinstvu.</em></h2>
         </div>
         <p>Program za farmu, baštu, domaćinstvo i održavanje, uz podršku pri izboru.</p>
