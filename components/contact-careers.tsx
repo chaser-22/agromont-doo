@@ -22,8 +22,10 @@ export function CareersSection() {
   const [careerError, setCareerError] = useState("");
   const dialogRef = useRef<HTMLDialogElement>(null);
   const openButtonRef = useRef<HTMLButtonElement>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
 
-  const openDialog = (position = "Otvorena prijava") => {
+  const openDialog = (position = "Otvorena prijava", trigger?: HTMLButtonElement | null) => {
+    lastTriggerRef.current = trigger ?? openButtonRef.current;
     setCareerPosition(position);
     setCareerDraft(null);
     setCareerFileName("");
@@ -38,7 +40,7 @@ export function CareersSection() {
 
   const closeDialog = () => {
     dialogRef.current?.close();
-    requestAnimationFrame(() => openButtonRef.current?.focus());
+    requestAnimationFrame(() => lastTriggerRef.current?.focus());
   };
 
   const submitCareer = (event: FormEvent<HTMLFormElement>) => {
@@ -98,14 +100,14 @@ export function CareersSection() {
           <div className="section-label light"><span>06</span> Karijere</div>
           <h2>Tražimo ljude koji<br /><em>poznaju posao.</em></h2>
           <p>Tražimo ljude koji razumiju tržište, proizvodnju i potrebe kupaca.</p>
-          <button ref={openButtonRef} className="button button-primary" type="button" onClick={() => openDialog()}>
+          <button ref={openButtonRef} className="button button-primary" type="button" onClick={(event) => openDialog("Otvorena prijava", event.currentTarget)}>
             Pošaljite CV <Arrow />
           </button>
         </div>
 
         <div className="jobs reveal">
           {jobs.map(([title, count, place], index) => (
-            <button type="button" onClick={() => openDialog(title)} key={title}>
+            <button type="button" onClick={(event) => openDialog(title, event.currentTarget)} key={title}>
               <span>0{index + 1}</span>
               <div>
                 <h3>{title}</h3>
