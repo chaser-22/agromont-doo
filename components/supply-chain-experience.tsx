@@ -105,6 +105,12 @@ export function SupplyChainExperience() {
       const mobile = window.matchMedia("(max-width: 900px)").matches;
       const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
 
+      const onContextLost = (event: Event) => {
+        event.preventDefault();
+        setFailed(true);
+      };
+      canvas.addEventListener("webglcontextlost", onContextLost);
+
       let renderer: any;
       try {
         renderer = new THREE.WebGLRenderer({
@@ -116,6 +122,7 @@ export function SupplyChainExperience() {
         });
       } catch {
         setFailed(true);
+        canvas.removeEventListener("webglcontextlost", onContextLost);
         return;
       }
 
@@ -345,6 +352,7 @@ export function SupplyChainExperience() {
         if (!mobile) window.removeEventListener("pointermove", onPointerMove);
         document.removeEventListener("visibilitychange", onVisibility);
         if (raf) cancelAnimationFrame(raf);
+        canvas.removeEventListener("webglcontextlost", onContextLost);
         supplyScene.dispose();
         renderer.dispose();
       };
@@ -417,6 +425,17 @@ export function SupplyChainExperience() {
         <p className="supply-disclaimer">
           3D vizuelizacija interpretira tok poslovnog sistema; nije tehnički model konkretnog postrojenja.
         </p>
+      </div>
+
+      <div className="supply-fallback-story" aria-label="Proizvodni sistem">
+        {stages.map((stage) => (
+          <article key={stage.code}>
+            <span>{stage.code} / {stage.eyebrow}</span>
+            <h2>{stage.title}</h2>
+            <p>{stage.body}</p>
+            <small>{stage.fact}</small>
+          </article>
+        ))}
       </div>
     </section>
   );
