@@ -3,7 +3,7 @@
    without changing the established AGROMONT concept or interaction model. */
 
 :root {
-  --r26-section-y: clamp(56px, 5.4vw, 88px);
+  --r26-section-y: clamp(48px, 4.6vw, 76px);
   --r26-content: 1240px;
   --r26-reading-center: 62ch;
 }
@@ -28,7 +28,7 @@
 /* ---------- Hero / production journey ---------- */
 
 .material-journey {
-  min-height: 340svh;
+  min-height: 315svh;
 }
 
 .journey-intro {
@@ -88,8 +88,8 @@
 
 .journey-step {
   width: min(720px, calc(100% - (var(--r26-gutter) * 2)));
-  height: 61svh;
-  min-height: 430px;
+  height: 56svh;
+  min-height: 400px;
   margin: 0 auto;
   padding: 0;
   grid-template-columns: 1fr;
@@ -322,7 +322,7 @@
 }
 
 .r26 .program-copy {
-  min-height: 220px;
+  min-height: 0;
   padding: 24px;
   text-align: center;
   align-items: center;
@@ -567,7 +567,7 @@
 
 @media (max-width: 1120px) {
   .material-journey {
-    min-height: 330svh;
+    min-height: 305svh;
   }
 
   .journey-intro {
@@ -593,8 +593,8 @@
 
   .journey-step {
     width: min(680px, calc(100% - 44px));
-    height: 59svh;
-    min-height: 420px;
+    height: 54svh;
+    min-height: 370px;
     margin: 0 auto;
     grid-template-columns: 1fr;
     padding: 0;
@@ -629,7 +629,7 @@
 
 @media (max-width: 760px) {
   :root {
-    --r26-section-y: 54px;
+    --r26-section-y: 48px;
   }
 
   .r26 .section-pad {
@@ -638,7 +638,7 @@
   }
 
   .material-journey {
-    min-height: 300svh;
+    min-height: 282svh;
   }
 
   .journey-intro {
@@ -686,7 +686,7 @@
 
   .journey-step {
     width: calc(100% - 36px);
-    height: 52svh;
+    height: 50svh;
     min-height: 390px;
     margin: 0 auto;
     padding: 0;
@@ -919,5 +919,42 @@
 
   .journey-step {
     min-height: 360px;
+  }
+}
+
+
+/* ---------- Header centering ---------- */
+
+@media (min-width: 1121px) {
+  .r26 .site-header {
+    grid-template-columns: auto auto auto;
+    justify-content: center;
+    gap: clamp(28px, 4vw, 68px);
+  }
+
+  .r26 .brand-text-only,
+  .r26 .desktop-nav,
+  .r26 .header-cta {
+    justify-self: center;
+  }
+}
+
+@media (max-width: 1120px) {
+  .r26 .site-header {
+    grid-template-columns: 1fr auto 1fr;
+  }
+
+  .r26 .site-header > .brand {
+    grid-column: 2;
+    justify-self: center;
+  }
+
+  .r26 .menu-toggle {
+    grid-column: 3;
+    justify-self: end;
+  }
+
+  .r26 .mobile-menu nav a {
+    text-align: center;
   }
 }
