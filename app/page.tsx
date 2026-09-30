@@ -46,7 +46,7 @@ export default function Home() {
 
         <section className="system-proof section-pad" id="o-nama" aria-labelledby="system-proof-title">
           <div className="system-proof-intro reveal">
-            <span className="industrial-kicker">SISTEM / INFRASTRUKTURA / TRŽIŠTE</span>
+            <span className="industrial-kicker">02 / SISTEM / INFRASTRUKTURA / TRŽIŠTE</span>
             <h2 id="system-proof-title">
               Nije jedna farma.
               <br />
