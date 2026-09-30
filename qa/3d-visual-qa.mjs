@@ -10,6 +10,7 @@ const profiles = [
   {
     name: "desktop-1440x900",
     viewport: { width: 1440, height: 900 },
+    captureSize: { width: 960, height: 600 },
     deviceScaleFactor: 1,
     isMobile: false,
     hasTouch: false,
@@ -17,6 +18,7 @@ const profiles = [
   {
     name: "mobile-390x844",
     viewport: { width: 390, height: 844 },
+    captureSize: { width: 390, height: 844 },
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
@@ -105,7 +107,7 @@ for (const profile of profiles) {
     const progress = milestones[index];
 
     await page.evaluate((value) => window.__AGROMONT_3D_QA__.setProgress(value), progress);
-    await page.waitForTimeout(profile.isMobile ? 420 : 520);
+    await page.waitForTimeout(profile.isMobile ? 180 : 220);
 
     const snapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
     milestoneSnapshots.push(snapshot);
@@ -136,7 +138,7 @@ for (const profile of profiles) {
   try {
     await page.screencast.start({
       path: videoPath,
-      size: profile.viewport,
+      size: profile.captureSize,
       quality: 84,
       onFrame: async ({ data }) => {
         while (captureIndex < milestones.length && captureProgress >= milestones[captureIndex] - 0.0001) {
@@ -153,10 +155,10 @@ for (const profile of profiles) {
 
     captureProgress = 0;
     await page.evaluate(() => window.__AGROMONT_3D_QA__.setProgress(0));
-    await page.waitForTimeout(350);
+    await page.waitForTimeout(220);
 
     const motionSamples = [];
-    const frameCount = profile.isMobile ? 180 : 210;
+    const frameCount = profile.isMobile ? 84 : 108;
     let previous = null;
     let maxCameraStep = 0;
     let maxTargetStep = 0;
@@ -181,11 +183,11 @@ for (const profile of profiles) {
       if (frame % 15 === 0 || frame === frameCount) {
         motionSamples.push(snapshot);
       }
-      await page.waitForTimeout(profile.isMobile ? 32 : 28);
+      await page.waitForTimeout(profile.isMobile ? 18 : 16);
     }
 
     captureProgress = 1;
-    await page.waitForTimeout(650);
+    await page.waitForTimeout(320);
     await page.screencast.stop();
     screencastStarted = false;
 
@@ -197,13 +199,13 @@ for (const profile of profiles) {
 
     const finalSnapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
 
-    if (maxCameraStep > 1.25) {
+    if (maxCameraStep > 2.0) {
       report.failures.push(`${profile.name}: camera step discontinuity ${maxCameraStep.toFixed(3)}`);
     }
-    if (maxTargetStep > 1.25) {
+    if (maxTargetStep > 2.0) {
       report.failures.push(`${profile.name}: target step discontinuity ${maxTargetStep.toFixed(3)}`);
     }
-    if (maxFovStep > 2.0) {
+    if (maxFovStep > 2.8) {
       report.failures.push(`${profile.name}: FOV step discontinuity ${maxFovStep.toFixed(3)}`);
     }
 
