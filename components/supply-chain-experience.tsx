@@ -130,7 +130,10 @@ export function SupplyChainExperience() {
       renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;
       renderer.toneMappingExposure = 1.0;
       renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4));
+      const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
+      const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
+      let currentDpr = maxDpr;
+      renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
       if (!mobile) {
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -243,6 +246,8 @@ export function SupplyChainExperience() {
       let markedReady = false;
       let targetPointerX = 0;
       let targetPointerY = 0;
+      let perfWindowStart = 0;
+      let perfFrames = 0;
       const clock = new THREE.Clock();
       const cameraPosition = new THREE.Vector3();
       const targetPosition = new THREE.Vector3();
@@ -322,6 +327,23 @@ export function SupplyChainExperience() {
         if (!frameGap || time - lastFrame >= frameGap) {
           lastFrame = time;
           draw();
+
+          if (!reducedMotion) {
+            if (!perfWindowStart) perfWindowStart = time;
+            perfFrames += 1;
+            const perfWindow = time - perfWindowStart;
+            if (perfWindow >= 1800) {
+              const fps = perfFrames / (perfWindow / 1000);
+              const floor = mobile ? 28 : 44;
+              if (fps < floor && currentDpr > minDpr + 0.02) {
+                currentDpr = Math.max(minDpr, currentDpr - 0.12);
+                renderer.setPixelRatio(currentDpr);
+                renderer.setSize(viewportWidth, viewportHeight, false);
+              }
+              perfWindowStart = time;
+              perfFrames = 0;
+            }
+          }
         }
         if (!reducedMotion) raf = requestAnimationFrame(loop);
       };
