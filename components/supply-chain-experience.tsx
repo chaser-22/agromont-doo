@@ -48,7 +48,7 @@ const stages = [
   },
 ] as const;
 
-const stageBreaks = [0, 0.15, 0.31, 0.47, 0.64, 0.81];
+const stageBreaks = [0.06, 0.19, 0.35, 0.51, 0.67, 0.83];
 
 function resolveStage(progress: number) {
   let current = 0;
@@ -388,12 +388,12 @@ export function SupplyChainExperience() {
           </div>
         </div>
 
-        <div className="supply-stage-index" aria-hidden="true">
+        <div className={`supply-stage-index ${pastIntro ? "is-visible" : ""}`} aria-hidden="true">
           <span>{stages[activeStage].code} / 06</span>
           <strong>{stages[activeStage].eyebrow}</strong>
         </div>
 
-        <div className="supply-stage-copy" id="sistem">
+        <div className={`supply-stage-copy ${pastIntro ? "is-visible" : ""}`} id="sistem">
           {stages.map((stage, index) => (
             <article
               key={stage.code}
@@ -408,7 +408,7 @@ export function SupplyChainExperience() {
           ))}
         </div>
 
-        <div className="supply-progress" aria-hidden="true">
+        <div className={`supply-progress ${pastIntro ? "is-visible" : ""}`} aria-hidden="true">
           {stages.map((stage, index) => (
             <i key={stage.code} className={index <= activeStage ? "is-active" : ""} />
           ))}
