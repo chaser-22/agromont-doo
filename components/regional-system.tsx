@@ -1,3 +1,5 @@
+import type { CSSProperties } from "react";
+
 const nodes = [
   {
     code: "ME-01",
@@ -68,7 +70,7 @@ export function RegionalSystem() {
 
         <div className="regional-node-grid">
           {nodes.map((node, index) => (
-            <article className="regional-node" key={node.code} style={{ "--node-index": index } as React.CSSProperties}>
+            <article className="regional-node" key={node.code} style={{ "--node-index": index } as CSSProperties}>
               <span>{node.code}</span>
               <div>
                 <small>{node.role}</small>
