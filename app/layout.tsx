@@ -33,7 +33,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     metadataBase: base,
     title: {
-      default: "AgroMont — Integrisani sistem proizvodnje",
+      default: "AgroMont — Od zrna do mreže",
       template: "%s | AgroMont",
     },
     description:
@@ -48,17 +48,17 @@ export async function generateMetadata(): Promise<Metadata> {
     ],
     alternates: { canonical: base },
     openGraph: {
-      title: "AgroMont — Integrisani sistem proizvodnje",
-      description: "Žitarice, stočna hrana, proizvodnja jaja, poljoprivredni centri i regionalno povezan sistem.",
+      title: "AgroMont — Od zrna do mreže",
+      description: "Žitarice, stočna hrana, proizvodnja jaja, sortiranje, distribucija i poljoprivredni centri povezani u jedan sistem.",
       type: "website",
       locale: "sr_ME",
       siteName: "AgroMont",
       url: base,
-      images: [{ url: socialImage, width: 1736, height: 904, alt: "AgroMont — integrisani sistem proizvodnje" }],
+      images: [{ url: socialImage, width: 1736, height: 904, alt: "AgroMont — proizvodni sistem od zrna do mreže" }],
     },
     twitter: {
       card: "summary_large_image",
-      title: "AgroMont — Integrisani sistem proizvodnje",
+      title: "AgroMont — Od zrna do mreže",
       description: "Žitarice. Hrana. Farma. Distribucija.",
       images: [socialImage],
     },
