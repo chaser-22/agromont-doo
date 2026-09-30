@@ -16,7 +16,7 @@ export const products: Product[] = [
     eyebrow: "Domaća proizvodnja",
     title: "Jaja i živinarski program",
     description:
-      "Od kontrolisane proizvodnje do pouzdane isporuke — kvalitet koji svakog dana stiže do domaćinstava i partnera.",
+      "Od kontrolisane proizvodnje do isporuke — program za domaćinstva, trgovinu i poslovne partnere.",
     index: "01",
     image: "/images/program-eggs-generated.webp",
     imageAlt: "Svježa domaća jaja u kartonskim pakovanjima",
@@ -27,7 +27,7 @@ export const products: Product[] = [
     eyebrow: "Za svaku fazu uzgoja",
     title: "Stočna hrana i koncentrati",
     description:
-      "Programi za živinu, goveda i svinje, uz stručnu preporuku i stabilan kvalitet formulacije.",
+      "Programi za živinu, goveda i svinje, uz preporuku prema fazi uzgoja i namjeni.",
     index: "02",
     image: "/images/program-feed-generated.webp",
     imageAlt: "Stočna hrana od žitarica uz pašnjak sa govedima",
@@ -38,7 +38,7 @@ export const products: Product[] = [
     eyebrow: "Sigurna osnova proizvodnje",
     title: "Žitarice",
     description:
-      "Kukuruz, pšenica i odabrane sirovine za gazdinstva, dostupne kroz mrežu AgroMont centara.",
+      "Kukuruz, pšenica i odabrane sirovine dostupne kroz mrežu AgroMont centara.",
     index: "03",
     image: "/images/program-grain-generated.webp",
     imageAlt: "Pšenica i kukuruz spremni za poljoprivrednu proizvodnju",
