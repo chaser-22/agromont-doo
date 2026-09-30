@@ -1799,3 +1799,60 @@ html.reveal-enabled .r26.lsc .reveal-stagger > .reveal-part {
     transition: none !important;
   }
 }
+
+
+/* Verified-location fallback: never invent a precise pin */
+.r26.lsc .location-map-placeholder {
+  min-height: 620px;
+  height: 100%;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  padding: clamp(34px, 5vw, 72px);
+  background:
+    linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px),
+    radial-gradient(circle at 72% 30%, rgba(232,154,40,.12), transparent 30%),
+    #101a13;
+  background-size: 42px 42px, 42px 42px, auto, auto;
+  color: #fff;
+}
+
+.r26.lsc .location-map-placeholder > span {
+  margin-bottom: 18px;
+  color: var(--lsc-amber);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .15em;
+}
+
+.r26.lsc .location-map-placeholder > strong {
+  max-width: 12ch;
+  font-size: clamp(34px, 4vw, 58px);
+  line-height: .96;
+  letter-spacing: -.05em;
+}
+
+.r26.lsc .location-map-placeholder > p {
+  max-width: 38ch;
+  margin: 18px 0 0;
+  color: rgba(255,255,255,.52);
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.r26.lsc .location-address {
+  display: block;
+  margin-top: 8px;
+  color: var(--lsc-amber);
+  font-size: 9px;
+  font-weight: 760;
+  letter-spacing: .06em;
+}
+
+@media (max-width: 760px) {
+  .r26.lsc .location-map-placeholder {
+    min-height: clamp(310px, 50svh, 390px);
+    padding: 28px 22px;
+  }
+}
