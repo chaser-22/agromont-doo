@@ -1,0 +1,99 @@
+name: 3D Visual QA
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "components/supply-chain-experience.tsx"
+      - "lib/supply-chain-scene.ts"
+      - "lib/industrial-detail-kit.ts"
+      - "app/styles/living-supply-chain.css"
+      - "app/styles/qa-3d.css"
+      - "app/qa-3d/**"
+      - "qa/**"
+      - ".github/workflows/3d-visual-qa.yml"
+  push:
+    branches: [main]
+    paths:
+      - "components/supply-chain-experience.tsx"
+      - "lib/supply-chain-scene.ts"
+      - "lib/industrial-detail-kit.ts"
+      - "app/styles/living-supply-chain.css"
+      - "app/styles/qa-3d.css"
+      - "app/qa-3d/**"
+      - "qa/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: 3d-visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  visual-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install app dependencies
+        run: npm ci
+
+      - name: Install Playwright QA runtime
+        run: |
+          npm install --no-save --package-lock=false playwright@1.63.0
+          npx playwright install --with-deps chromium
+
+      - name: Build production app
+        run: npm run build:vercel
+
+      - name: Start production server
+        run: |
+          nohup npm run start:vercel > /tmp/agromont-next.log 2>&1 &
+          echo $! > /tmp/agromont-next.pid
+
+      - name: Wait for QA route
+        run: |
+          for i in {1..45}; do
+            if curl --fail --silent http://127.0.0.1:3005/qa-3d > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+          cat /tmp/agromont-next.log
+          exit 1
+
+      - name: Record and inspect 3D
+        env:
+          QA_BASE_URL: http://127.0.0.1:3005
+          QA_OUTPUT_DIR: qa-artifacts
+        run: node qa/3d-visual-qa.mjs
+
+      - name: Add QA summary
+        if: always()
+        run: |
+          if [ -f qa-artifacts/summary.md ]; then
+            cat qa-artifacts/summary.md >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload 3D QA artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: agromont-3d-visual-qa
+          path: qa-artifacts/
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Print server log on failure
+        if: failure()
+        run: cat /tmp/agromont-next.log || true
