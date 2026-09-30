@@ -91,19 +91,32 @@ export const locations = [
     id: "golubovci",
     city: "Golubovci",
     type: "Poljoprivredni centar",
+    address: "Mojanovići · Magistralni put 31",
     description:
-      "Kompletan program za gazdinstva, stručna preporuka i podrška pri izboru proizvoda.",
+      "Centar otvoren u avgustu 2025. sa programom za poljoprivredu, hortikulturu, žitarice i stočnu hranu iz Spuža.",
     mapEmbed:
       "https://www.openstreetmap.org/export/embed.html?bbox=19.1682648%2C42.3136453%2C19.2682648%2C42.3736453&layer=mapnik&marker=42.3436453%2C19.2182648",
     mapLink:
-      "https://www.openstreetmap.org/?mlat=42.3436453&mlon=19.2182648#map=14/42.3436453/19.2182648",
+      "https://www.openstreetmap.org/search?query=Mojanovi%C4%87i%20Magistralni%20put%2031%20Golubovci%20Montenegro",
+  },
+  {
+    id: "berane",
+    city: "Berane",
+    type: "Poljoprivredni centar",
+    address: "Berane · sjever Crne Gore",
+    description:
+      "Centar otvoren 17. jula 2025. sa stočnom hranom, žitaricama, repromaterijalom, alatima i opremom.",
+    mapEmbed: null,
+    mapLink:
+      "https://www.openstreetmap.org/search?query=Berane%20Montenegro",
   },
   {
     id: "tuzi",
     city: "Tuzi",
     type: "Prodajni centar",
+    address: "Tuzi",
     description:
-      "Savremena maloprodaja poljoprivrednog, baštenskog i pratećeg programa na jednom mjestu.",
+      "Prodajna lokacija iz postojeće AgroMont mreže sa poljoprivrednim, baštenskim i pratećim programom.",
     mapEmbed:
       "https://www.openstreetmap.org/export/embed.html?bbox=19.2800881%2C42.3361526%2C19.3800881%2C42.3961526&layer=mapnik&marker=42.3661526%2C19.3300881",
     mapLink:
