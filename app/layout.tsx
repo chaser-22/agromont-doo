@@ -37,7 +37,7 @@ export async function generateMetadata(): Promise<Metadata> {
       template: "%s | AgroMont",
     },
     description:
-      "AgroMont — domaća proizvodnja jaja i stočne hrane, poljoprivredni centri i kompletan program za gazdinstva u Crnoj Gori.",
+      "AgroMont povezuje žitarice, stočnu hranu, proizvodnju jaja, sortiranje, distribuciju i poljoprivredne centre u jedan sistem.",
     keywords: [
       "AgroMont",
       "stočna hrana Crna Gora",
