@@ -127,47 +127,68 @@ export function SupplyChainExperience() {
       }
 
       renderer.outputColorSpace = THREE.SRGBColorSpace;
-      renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.08;
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, lowPower ? 0.78 : mobile ? 1 : 1.35));
+      renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;
+      renderer.toneMappingExposure = 1.0;
+      renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
+      const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
+      const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
+      let currentDpr = maxDpr;
+      renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
-      if (!mobile) renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      renderer.setClearColor(0x151a16, 1);
+      if (!mobile) {
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.shadowMap.autoUpdate = false;
+        renderer.shadowMap.needsUpdate = true;
+      }
+      renderer.setClearColor(0x536258, 1);
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x151a16);
-      scene.fog = new THREE.FogExp2(0x151a16, mobile ? 0.027 : 0.021);
+      scene.background = new THREE.Color(0x536258);
+      scene.fog = new THREE.FogExp2(0x59665c, mobile ? 0.020 : 0.0155);
 
-      const camera = new THREE.PerspectiveCamera(mobile ? 38 : 34, 1, 0.1, 120);
+      let environmentTarget: any = null;
+      try {
+        const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
+        const pmremGenerator = new THREE.PMREMGenerator(renderer);
+        const environmentScene = new RoomEnvironment();
+        environmentTarget = pmremGenerator.fromScene(environmentScene, 0.045);
+        scene.environment = environmentTarget.texture;
+        environmentScene.dispose();
+        pmremGenerator.dispose();
+      } catch {
+        // Direct lights still provide a complete fallback if the optional IBL helper is unavailable.
+      }
+
+      const camera = new THREE.PerspectiveCamera(mobile ? 39 : 33, 1, 0.08, 145);
 
       const cameraPoints = mobile
         ? [
-            new THREE.Vector3(-19.5, 2.3, 8.2),
-            new THREE.Vector3(-12.5, 5.3, 12.7),
-            new THREE.Vector3(1.8, 6.6, 14.5),
-            new THREE.Vector3(16.2, 5.2, 13.8),
-            new THREE.Vector3(16.0, 2.7, 10.1),
-            new THREE.Vector3(5.8, 5.9, 15.8),
-            new THREE.Vector3(3.5, 15.8, 27.0),
+            new THREE.Vector3(-20.4, 1.85, 7.5),
+            new THREE.Vector3(-13.6, 4.3, 10.1),
+            new THREE.Vector3(2.5, 5.6, 11.8),
+            new THREE.Vector3(17.8, 4.0, 11.6),
+            new THREE.Vector3(17.5, 2.65, 10.1),
+            new THREE.Vector3(7.6, 4.2, 14.2),
+            new THREE.Vector3(3.6, 15.6, 27.0),
           ]
         : [
-            new THREE.Vector3(-20.2, 1.65, 6.8),
-            new THREE.Vector3(-12.8, 4.3, 11.6),
-            new THREE.Vector3(-0.3, 5.7, 13.4),
-            new THREE.Vector3(14.5, 4.1, 13.7),
-            new THREE.Vector3(17.6, 2.1, 8.7),
-            new THREE.Vector3(5.0, 4.8, 14.9),
-            new THREE.Vector3(2.0, 17.6, 29.0),
+            new THREE.Vector3(-20.9, 1.12, 4.9),
+            new THREE.Vector3(-13.4, 2.85, 7.7),
+            new THREE.Vector3(2.9, 4.35, 8.9),
+            new THREE.Vector3(18.6, 2.7, 5.6),
+            new THREE.Vector3(18.2, 1.95, 8.8),
+            new THREE.Vector3(7.3, 2.15, 12.8),
+            new THREE.Vector3(3.4, 17.4, 28.6),
           ];
 
       const targetPoints = [
-        new THREE.Vector3(-17.0, 1.2, 0.3),
-        new THREE.Vector3(-7.4, 4.0, -3.6),
-        new THREE.Vector3(1.6, 4.4, -2.0),
-        new THREE.Vector3(15.1, 1.6, -2.2),
-        new THREE.Vector3(14.5, 1.4, 4.0),
-        new THREE.Vector3(3.2, 1.4, 7.0),
-        new THREE.Vector3(3.0, 0.5, 0.0),
+        new THREE.Vector3(-18.0, 0.95, 0.0),
+        new THREE.Vector3(-8.5, 5.1, -4.0),
+        new THREE.Vector3(1.4, 4.6, -2.1),
+        new THREE.Vector3(16.1, 1.55, 0.6),
+        new THREE.Vector3(14.8, 1.35, 4.0),
+        new THREE.Vector3(3.1, 1.45, 7.0),
+        new THREE.Vector3(2.0, 1.6, 0.0),
       ];
 
       const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "catmullrom", 0.42);
@@ -176,35 +197,41 @@ export function SupplyChainExperience() {
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
       scene.add(supplyScene.world);
 
-      const hemi = new THREE.HemisphereLight(0xd8dfd2, 0x172018, mobile ? 1.65 : 1.95);
+      const hemi = new THREE.HemisphereLight(0xdce3d8, 0x283229, mobile ? 1.05 : 1.25);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffdfaa, mobile ? 2.8 : 4.0);
-      sun.position.set(-13, 18, 13);
+      const sun = new THREE.DirectionalLight(0xffd79d, mobile ? 2.4 : 3.65);
+      sun.position.set(-16, 19, 11);
+      sun.target.position.set(2, 0.8, 0);
       sun.castShadow = !mobile;
       if (!mobile) {
-        sun.shadow.mapSize.set(1536, 1536);
-        sun.shadow.camera.left = -28;
-        sun.shadow.camera.right = 28;
-        sun.shadow.camera.top = 24;
-        sun.shadow.camera.bottom = -18;
+        sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
+        sun.shadow.camera.left = -31;
+        sun.shadow.camera.right = 31;
+        sun.shadow.camera.top = 26;
+        sun.shadow.camera.bottom = -21;
         sun.shadow.camera.near = 1;
-        sun.shadow.camera.far = 65;
-        sun.shadow.bias = -0.00035;
+        sun.shadow.camera.far = 72;
+        sun.shadow.bias = -0.00028;
+        sun.shadow.normalBias = 0.018;
       }
-      scene.add(sun);
+      scene.add(sun, sun.target);
 
-      const coolFill = new THREE.DirectionalLight(0x83a997, 1.1);
-      coolFill.position.set(18, 9, -14);
+      const coolFill = new THREE.DirectionalLight(0x8ca89c, mobile ? 0.55 : 0.72);
+      coolFill.position.set(21, 11, -16);
       scene.add(coolFill);
 
-      const processLight = new THREE.PointLight(0xf0a128, mobile ? 7 : 12, 18, 2);
-      processLight.position.set(2.0, 5.2, 1.5);
+      const warmBounce = new THREE.DirectionalLight(0xc78d5e, mobile ? 0.28 : 0.42);
+      warmBounce.position.set(-8, 4, 18);
+      scene.add(warmBounce);
+
+      const processLight = new THREE.PointLight(0xf0a128, mobile ? 3.4 : 5.8, 17, 2);
+      processLight.position.set(2.0, 4.8, 1.5);
       scene.add(processLight);
 
-      const gradingLight = new THREE.SpotLight(0xf4d7aa, mobile ? 9 : 15, 22, Math.PI / 5, 0.55, 1.4);
-      gradingLight.position.set(14.5, 7.4, 10.0);
-      gradingLight.target.position.set(14.5, 0.5, 4.0);
+      const gradingLight = new THREE.SpotLight(0xffd8a4, mobile ? 4.8 : 7.5, 21, Math.PI / 6.3, 0.6, 1.45);
+      gradingLight.position.set(14.6, 6.7, 9.6);
+      gradingLight.target.position.set(14.8, 0.9, 4.0);
       scene.add(gradingLight, gradingLight.target);
 
       let viewportWidth = 0;
@@ -219,6 +246,8 @@ export function SupplyChainExperience() {
       let markedReady = false;
       let targetPointerX = 0;
       let targetPointerY = 0;
+      let perfWindowStart = 0;
+      let perfFrames = 0;
       const clock = new THREE.Clock();
       const cameraPosition = new THREE.Vector3();
       const targetPosition = new THREE.Vector3();
@@ -275,10 +304,12 @@ export function SupplyChainExperience() {
           camera.updateProjectionMatrix();
         }
 
-        const daylight = 1 + Math.sin(cameraProgress * Math.PI) * 0.08;
+        const daylight = 0.96 + Math.sin(cameraProgress * Math.PI) * 0.065;
         renderer.toneMappingExposure = daylight;
-        processLight.intensity = (mobile ? 6 : 10) + Math.sin(elapsed * 0.8) * 0.4;
-        sun.position.x = -13 + cameraProgress * 9;
+        processLight.intensity = (mobile ? 3.2 : 5.5) + Math.sin(elapsed * 0.72) * 0.24;
+        gradingLight.intensity = (mobile ? 4.6 : 7.2) + Math.sin(elapsed * 0.55) * 0.18;
+        sun.position.x = -16 + cameraProgress * 8.5;
+        if (scene.fog) scene.fog.density = (mobile ? 0.020 : 0.0155) + cameraProgress * 0.0016;
 
         supplyScene.update(elapsed, cameraProgress);
         renderer.render(scene, camera);
@@ -296,6 +327,23 @@ export function SupplyChainExperience() {
         if (!frameGap || time - lastFrame >= frameGap) {
           lastFrame = time;
           draw();
+
+          if (!reducedMotion) {
+            if (!perfWindowStart) perfWindowStart = time;
+            perfFrames += 1;
+            const perfWindow = time - perfWindowStart;
+            if (perfWindow >= 1800) {
+              const fps = perfFrames / (perfWindow / 1000);
+              const floor = mobile ? 28 : 44;
+              if (fps < floor && currentDpr > minDpr + 0.02) {
+                currentDpr = Math.max(minDpr, currentDpr - 0.12);
+                renderer.setPixelRatio(currentDpr);
+                renderer.setSize(viewportWidth, viewportHeight, false);
+              }
+              perfWindowStart = time;
+              perfFrames = 0;
+            }
+          }
         }
         if (!reducedMotion) raf = requestAnimationFrame(loop);
       };
@@ -354,6 +402,7 @@ export function SupplyChainExperience() {
         if (raf) cancelAnimationFrame(raf);
         canvas.removeEventListener("webglcontextlost", onContextLost);
         supplyScene.dispose();
+        environmentTarget?.dispose?.();
         renderer.dispose();
       };
     };
