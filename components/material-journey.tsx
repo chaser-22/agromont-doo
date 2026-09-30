@@ -76,8 +76,8 @@ export function MaterialJourney() {
       if (disposed) return;
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const mobile = window.matchMedia("(max-width: 819px)").matches;
-      const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
+      const mobile = window.matchMedia("(max-width: 980px)").matches;
+      const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 600);
 
       let renderer: any;
       try {
