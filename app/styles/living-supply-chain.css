@@ -1856,3 +1856,23 @@ html.reveal-enabled .r26.lsc .reveal-stagger > .reveal-part {
     padding: 28px 22px;
   }
 }
+
+
+/* Hero-to-process handoff: prevent stage UI from competing with the opening statement. */
+.supply-stage-index,
+.supply-stage-copy,
+.supply-progress {
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 320ms ease;
+}
+
+.supply-stage-index.is-visible,
+.supply-stage-copy.is-visible,
+.supply-progress.is-visible {
+  opacity: 1;
+}
+
+.supply-stage-copy article {
+  pointer-events: none;
+}
