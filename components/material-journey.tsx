@@ -551,7 +551,7 @@ export function MaterialJourney() {
             Ne prikazujemo simbol poljoprivrede — pratimo materijal kroz stvarni poslovni sistem.
           </p>
           <div className="journey-actions">
-            <a href="#sistem">Pratite proizvodni tok <span aria-hidden="true">↓</span></a>
+            <a href="#sistem">Pratite tok <span aria-hidden="true">↓</span></a>
             <a href="#proizvodi">Pogledajte program ↗</a>
           </div>
         </div>
