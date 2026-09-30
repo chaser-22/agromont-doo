@@ -46,7 +46,7 @@ export default function Home() {
           <div className="r26-proof-head reveal">
             <div className="section-label"><span>01</span> Sistem, ne slogan</div>
             <h2 id="proof-title">
-              AgroMont je jači kada se vidi <em>kao lanac.</em>
+              AgroMont se najbolje razumije <em>kao povezan lanac.</em>
             </h2>
             <p>
               Kompanija povezuje ulazne sirovine, proizvodnju stočne hrane, farme, pakovanje,
@@ -106,13 +106,13 @@ export default function Home() {
         </section>
 
         <section className="r26-bridge section-pad reveal" aria-label="AgroMont pozicioniranje">
-          <p>PROIZVODNJA / DISTRIBUCIJA / PODRŠKA</p>
+          <p>PROIZVODNJA / PAKOVANJE / DISTRIBUCIJA</p>
           <h2>
             Fizička infrastruktura je brend.
             <br />
             <em>Ne pozadina.</em>
           </h2>
-          <a href="#proizvodi">Pogledajte program <Arrow /></a>
+          <a href="#proizvodi">Istražite program <Arrow /></a>
         </section>
 
         <ProgramsSection />
@@ -121,7 +121,7 @@ export default function Home() {
         <section className="r26-regional section-pad" id="aktuelno">
           <div className="r26-regional-copy reveal">
             <div className="section-label"><span>05</span> Širi kontekst</div>
-            <h2>Iz Crne Gore.<br /><em>Prema regionu.</em></h2>
+            <h2>Iz Crne Gore.<br /><em>Povezano sa regionom.</em></h2>
             <p>
               Javno objavljeni razvoj uključuje otkupne centre žitarica u Srbiji i preuzimanje
               velike farme u Milićima 2025. godine. To mijenja sliku AgroMonta: sa lokalnog
