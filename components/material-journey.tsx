@@ -13,29 +13,29 @@ type JourneyStep = {
 const steps: JourneyStep[] = [
   {
     index: "01",
-    eyebrow: "Žitarice / ulaz",
+    eyebrow: "Žitarice / sirovina",
     title: "Sve počinje sirovinom.",
-    text: "AgroMont je širio kontrolu lanca otvaranjem otkupnih centara žitarica u Šapcu i Kovinu, dok se proizvodni sistem oslanja na povezivanje sirovine, hrane i farme.",
+    text: "Otkupni centri žitarica u Šapcu i Kovinu povezuju nabavku sirovine sa proizvodnjom stočne hrane i farmama.",
     fact: "Šabac + Kovin · 50.000 t ukupnog kapaciteta prema objavi iz 2025.",
   },
   {
     index: "02",
     eyebrow: "Spuž / stočna hrana",
-    title: "Sirovina postaje precizna formulacija.",
-    text: "Fabrika stočne hrane u Spužu povezuje nabavku žitarica sa potrebama farmi i regionalnog tržišta. To je industrijski dio priče koji posjetilac treba da razumije, ne samo da vidi.",
+    title: "Sirovina postaje stočna hrana.",
+    text: "Fabrika u Spužu povezuje nabavku žitarica sa proizvodnjom stočne hrane za farme i tržište.",
     fact: "Spuž · domaća proizvodnja stočne hrane",
   },
   {
     index: "03",
     eyebrow: "Farma / jaja",
-    title: "Hrana postaje proizvod.",
+    title: "Sljedeća tačka je farma.",
     text: "Martinići su ključna tačka AgroMontove proizvodnje jaja, dok je preuzimanje velikog kompleksa u Milićima 2025. proširilo sistem na regionalni nivo.",
     fact: "Martinići + Milići · proizvodnja i pakovanje jaja",
   },
   {
     index: "04",
     eyebrow: "Distribucija / kupac",
-    title: "Proizvod izlazi iz fabrike. Sistem se nastavlja.",
+    title: "Pakovanje vodi prema tržištu.",
     text: "Distribucija, partneri i poljoprivredni centri zatvaraju krug: od proizvodnje do gazdinstava, trgovaca i krajnjih kupaca.",
     fact: "Centri · partneri · regionalna distribucija",
   },
@@ -540,7 +540,7 @@ export function MaterialJourney() {
         <div className="journey-grid" aria-hidden="true" />
 
         <div className={`journey-intro ${pastIntro ? "is-past" : ""}`}>
-          <span className="journey-overline">AGROMONT / INTEGRISANI SISTEM</span>
+          <span className="journey-overline">AGROMONT / PROIZVODNI SISTEM</span>
           <h1 id="journey-title">
             Od sirovine
             <br />
@@ -551,8 +551,8 @@ export function MaterialJourney() {
             Ne prikazujemo simbol poljoprivrede — pratimo materijal kroz stvarni poslovni sistem.
           </p>
           <div className="journey-actions">
-            <a href="#sistem">Pratite tok <span aria-hidden="true">↓</span></a>
-            <a href="#proizvodi">Program i proizvodi ↗</a>
+            <a href="#sistem">Pratite proizvodni tok <span aria-hidden="true">↓</span></a>
+            <a href="#proizvodi">Pogledajte program ↗</a>
           </div>
         </div>
 
