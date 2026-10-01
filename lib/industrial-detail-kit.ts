@@ -413,6 +413,58 @@ export function createDetailedFarmHall(
   const hall = addShadow(new THREE.Mesh(geometry, materials.hallPanel), options.shadows);
   group.add(hall);
 
+  // Real poultry halls sit on a concrete plinth and show repeated structural bays.
+  const plinth = addShadow(
+    new THREE.Mesh(new THREE.BoxGeometry(length * 0.985, 0.24, width + 0.10), materials.concrete),
+    options.shadows,
+  );
+  plinth.position.y = 0.12;
+  group.add(plinth);
+
+  const bayCount = options.lowPower ? 6 : Math.max(8, Math.round(length / 1.15));
+  const ribGeo = new THREE.BoxGeometry(0.045, 2.28, 0.045);
+  const ribs = new THREE.InstancedMesh(ribGeo, materials.galvanized, bayCount * 2);
+  const ribDummy = new THREE.Object3D();
+  let ribIndex = 0;
+  for (const z of [-width / 2 - 0.035, width / 2 + 0.035]) {
+    for (let i = 0; i < bayCount; i++) {
+      ribDummy.position.set(-length / 2 + 0.45 + (i / Math.max(1, bayCount - 1)) * (length - 0.9), 1.35, z);
+      ribDummy.rotation.set(0, 0, 0);
+      ribDummy.updateMatrix();
+      ribs.setMatrixAt(ribIndex++, ribDummy.matrix);
+    }
+  }
+  ribs.instanceMatrix.needsUpdate = true;
+  group.add(ribs);
+
+  const ridgeCap = new THREE.Mesh(
+    new THREE.BoxGeometry(length * 0.94, 0.12, 0.30),
+    materials.galvanized,
+  );
+  ridgeCap.position.set(0, 3.94, 0);
+  group.add(ridgeCap);
+
+  for (const z of [-width / 2 - 0.09, width / 2 + 0.09]) {
+    const gutter = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.045, 0.045, length * 0.96, 10),
+      materials.galvanized,
+    );
+    gutter.rotation.z = Math.PI / 2;
+    gutter.position.set(0, 2.57, z);
+    group.add(gutter);
+  }
+
+  if (!options.lowPower) {
+    for (const x of [-length * 0.43, length * 0.43]) {
+      const downpipe = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.035, 0.035, 2.35, 8),
+        materials.galvanized,
+      );
+      downpipe.position.set(x, 1.28, width / 2 + 0.09);
+      group.add(downpipe);
+    }
+  }
+
   const door = addShadow(
     new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.72, 1.25), materials.darkMetal),
     options.shadows,
@@ -461,6 +513,41 @@ export function createDetailedFarmHall(
   feedPipe.rotation.z = Math.PI / 2;
   feedPipe.position.set(0, 2.25, width / 2 + 0.22);
   group.add(feedPipe);
+
+  if (!options.lowPower) {
+    const louverGeo = new THREE.BoxGeometry(0.72, 0.12, 0.055);
+    const louvers = new THREE.InstancedMesh(louverGeo, materials.darkMetal, 8);
+    const louverDummy = new THREE.Object3D();
+    for (let i = 0; i < 8; i++) {
+      louverDummy.position.set(
+        -length * 0.34 + (i % 4) * (length * 0.68 / 3),
+        2.05 + Math.floor(i / 4) * 0.30,
+        width / 2 + 0.065,
+      );
+      louverDummy.updateMatrix();
+      louvers.setMatrixAt(i, louverDummy.matrix);
+    }
+    louvers.instanceMatrix.needsUpdate = true;
+    group.add(louvers);
+
+    // Fan blades break the flat circular disks and read clearly in oblique shots.
+    const bladeGeo = new THREE.BoxGeometry(0.24, 0.055, 0.025);
+    const blades = new THREE.InstancedMesh(bladeGeo, materials.galvanized, fanCount * 4);
+    const bladeDummy = new THREE.Object3D();
+    let bladeIndex = 0;
+    for (let i = 0; i < fanCount; i++) {
+      const x = -length * 0.31 + i * (length * 0.62 / Math.max(1, fanCount - 1));
+      for (let b = 0; b < 4; b++) {
+        const angle = b * Math.PI / 2 + 0.28;
+        bladeDummy.position.set(x, 1.35, -width / 2 - 0.125);
+        bladeDummy.rotation.set(0, 0, angle);
+        bladeDummy.updateMatrix();
+        blades.setMatrixAt(bladeIndex++, bladeDummy.matrix);
+      }
+    }
+    blades.instanceMatrix.needsUpdate = true;
+    group.add(blades);
+  }
 
   return group;
 }
@@ -513,9 +600,30 @@ export function createDetailedTruck(
   hood.position.set(-3.28, 1.16, 0);
   group.add(hood);
 
-  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.76, 1.70), materials.glass);
-  windscreen.position.set(-3.12, 1.94, 0);
+  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.78, 1.72), materials.glass);
+  windscreen.position.set(-3.115, 1.95, 0);
   group.add(windscreen);
+
+  const windscreenDivider = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.80, 0.045), materials.darkMetal);
+  windscreenDivider.position.set(-3.15, 1.95, 0);
+  group.add(windscreenDivider);
+
+  const cabRoof = addShadow(
+    new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.16, 2.24), materials.green),
+    options.shadows,
+  );
+  cabRoof.position.set(-2.24, 2.69, 0);
+  group.add(cabRoof);
+
+  for (const z of [-1.095, 1.095]) {
+    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.66, 0.045), materials.glass);
+    sideWindow.position.set(-2.55, 2.03, z);
+    group.add(sideWindow);
+
+    const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.045, 0.035), materials.darkMetal);
+    doorHandle.position.set(-1.98, 1.75, z * 1.012);
+    group.add(doorHandle);
+  }
 
   const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.22, 2.08), materials.galvanized);
   bumper.position.set(-3.61, 0.77, 0);
@@ -538,8 +646,31 @@ export function createDetailedTruck(
     group.add(mirror);
   }
 
-  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.28, 28);
-  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.30, 18);
+  const exhaust = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.70, 10), materials.darkMetal);
+  exhaust.position.set(-1.36, 2.02, 0.92);
+  group.add(exhaust);
+  const exhaustCap = new THREE.Mesh(new THREE.CylinderGeometry(0.11, 0.08, 0.12, 10), materials.darkMetal);
+  exhaustCap.position.set(-1.36, 2.90, 0.92);
+  group.add(exhaustCap);
+
+  for (const z of [-0.92, 0.92]) {
+    const tank = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 1.18, 18), materials.galvanized);
+    tank.rotation.z = Math.PI / 2;
+    tank.position.set(-0.78, 0.86, z);
+    group.add(tank);
+  }
+
+  if (!options.lowPower) {
+    const markerGeo = new THREE.BoxGeometry(0.06, 0.08, 0.10);
+    for (const z of [-0.76, -0.38, 0, 0.38, 0.76]) {
+      const marker = new THREE.Mesh(markerGeo, materials.amber);
+      marker.position.set(-3.33, 2.52, z);
+      group.add(marker);
+    }
+  }
+
+  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.30, 32);
+  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.32, 20);
   for (const x of [-2.36, 0.25, 2.55]) {
     for (const z of [-1.10, 1.10]) {
       const wheel = new THREE.Mesh(wheelGeometry, materials.rubber);
@@ -550,7 +681,20 @@ export function createDetailedTruck(
       hub.rotation.x = Math.PI / 2;
       hub.position.set(x, 0.47, z * 1.015);
       group.add(hub);
+
+      const mudguard = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.10, 0.34), materials.darkMetal);
+      mudguard.position.set(x, 0.92, z);
+      group.add(mudguard);
     }
+  }
+
+  const rearBar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.22, 2.06), materials.darkMetal);
+  rearBar.position.set(3.92, 0.66, 0);
+  group.add(rearBar);
+  for (const z of [-0.72, 0.72]) {
+    const rearLight = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.14, 0.22), materials.amber);
+    rearLight.position.set(4.02, 0.82, z);
+    group.add(rearLight);
   }
 
   return group;
