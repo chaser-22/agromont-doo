@@ -1362,6 +1362,16 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   return {
     world,
     materials,
+    heroSlots: {
+      truck: {
+        anchor: truck,
+        fallbackObjects: [truck],
+      },
+      scanner: {
+        anchor: scannerArch,
+        fallbackObjects: [scannerArch],
+      },
+    },
     update,
     dispose,
   };
