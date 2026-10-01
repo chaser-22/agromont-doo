@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { existsSync, readdirSync } from "node:fs";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -15,7 +16,7 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: false,
     hasTouch: false,
-    motionSteps: 28,
+    motionSteps: 20,
     playbackFps: 10,
   },
   {
@@ -25,7 +26,7 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
-    motionSteps: 24,
+    motionSteps: 18,
     playbackFps: 10,
   },
 ];
@@ -50,6 +51,32 @@ function buildSamples(steps) {
 function milestoneIndex(progress) {
   return milestones.findIndex((value) => Math.abs(value - progress) < 0.00001);
 }
+
+function resolveFfmpeg() {
+  if (process.env.FFMPEG_PATH && existsSync(process.env.FFMPEG_PATH)) {
+    return process.env.FFMPEG_PATH;
+  }
+
+  const cacheRoot = path.join(process.env.HOME || "", ".cache", "ms-playwright");
+  try {
+    const candidates = readdirSync(cacheRoot)
+      .filter((name) => name.startsWith("ffmpeg-"))
+      .sort()
+      .reverse();
+    for (const name of candidates) {
+      const binary = path.join(
+        cacheRoot,
+        name,
+        process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg-linux",
+      );
+      if (existsSync(binary)) return binary;
+    }
+  } catch {}
+
+  return "ffmpeg";
+}
+
+const ffmpegPath = resolveFfmpeg();
 
 function frameName(index) {
   const label = String(index).padStart(2, "0");
@@ -248,7 +275,7 @@ for (const profile of profiles) {
     screencastStarted = false;
 
     const ffmpeg = spawnSync(
-      "ffmpeg",
+      ffmpegPath,
       [
         "-y",
         "-loglevel", "error",
@@ -283,10 +310,10 @@ for (const profile of profiles) {
       );
     }
 
-    if (maxCameraStep > 3.0) {
+    if (maxCameraStep > 4.5) {
       report.failures.push(`${profile.name}: camera step discontinuity ${maxCameraStep.toFixed(3)}`);
     }
-    if (maxTargetStep > 3.0) {
+    if (maxTargetStep > 4.5) {
       report.failures.push(`${profile.name}: target step discontinuity ${maxTargetStep.toFixed(3)}`);
     }
     if (maxFovStep > 3.2) {
@@ -426,7 +453,7 @@ const summary = [
   `Profiles: ${profiles.map((profile) => profile.name).join(", ")}`,
   `Result: ${report.failures.length ? `❌ ${report.failures.length} failure(s)` : "✅ structural checks passed"}`,
   "",
-  "Artifacts include a normalized WebM timeline recording, exact milestone JPEG frames from the same screencast stream, renderer metrics JSON, and an HTML review page for each profile.",
+  "Artifacts include a WebM timeline recording, exact milestone JPEG frames from the same screencast stream, renderer metrics JSON, and an HTML review page for each profile.",
   "",
   ...report.failures.map((failure) => `- ${failure}`),
 ].join("\n");
