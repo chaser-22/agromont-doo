@@ -48,6 +48,16 @@ jobs:
       - name: Install glTF optimization toolchain
         run: npm install --global @gltf-transform/cli@latest
 
+      - name: Install Khronos KTX-Software
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 4 --retry-delay 2 \
+            -o /tmp/ktx.deb \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          sudo dpkg -i /tmp/ktx.deb
+          command -v ktx
+          ktx --version
+
       - name: Meshopt and KTX2 package hero LODs
         run: |
           set -euxo pipefail
