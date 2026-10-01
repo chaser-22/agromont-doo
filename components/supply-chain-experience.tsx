@@ -271,6 +271,79 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, ultra: ultraRenderer });
       scene.add(supplyScene.world);
 
+      const importedTextures: any[] = [];
+      if (!mobile) {
+        try {
+          const textureLoader = new THREE.TextureLoader();
+          const loadSurface = async (url: string, color = false) => {
+            const texture = await textureLoader.loadAsync(url);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            texture.anisotropy = ultraRenderer ? 12 : 6;
+            if (color) texture.colorSpace = THREE.SRGBColorSpace;
+            importedTextures.push(texture);
+            return texture;
+          };
+
+          const [
+            asphaltDiffuse,
+            asphaltNormal,
+            asphaltRoughness,
+            concreteDiffuse,
+            concreteNormal,
+            concreteRoughness,
+          ] = await Promise.all([
+            loadSurface("/textures/ultra/asphalt-diffuse.jpg", true),
+            loadSurface("/textures/ultra/asphalt-normal.jpg"),
+            loadSurface("/textures/ultra/asphalt-roughness.jpg"),
+            loadSurface("/textures/ultra/concrete-diffuse.jpg", true),
+            loadSurface("/textures/ultra/concrete-normal.jpg"),
+            loadSurface("/textures/ultra/concrete-roughness.jpg"),
+          ]);
+
+          asphaltDiffuse.repeat.set(10, 3);
+          asphaltNormal.repeat.copy(asphaltDiffuse.repeat);
+          asphaltRoughness.repeat.copy(asphaltDiffuse.repeat);
+          concreteDiffuse.repeat.set(9, 6);
+          concreteNormal.repeat.copy(concreteDiffuse.repeat);
+          concreteRoughness.repeat.copy(concreteDiffuse.repeat);
+
+          const asphaltMaterial: any = supplyScene.materials.asphalt;
+          asphaltMaterial.color.set(0x8a8983);
+          asphaltMaterial.map = asphaltDiffuse;
+          asphaltMaterial.normalMap = asphaltNormal;
+          asphaltMaterial.normalScale?.set?.(0.48, 0.48);
+          asphaltMaterial.roughnessMap = asphaltRoughness;
+          asphaltMaterial.bumpMap = null;
+          asphaltMaterial.roughness = 0.94;
+          asphaltMaterial.needsUpdate = true;
+
+          const concreteMaterial: any = supplyScene.materials.concrete;
+          concreteMaterial.color.set(0xa7a39a);
+          concreteMaterial.map = concreteDiffuse;
+          concreteMaterial.normalMap = concreteNormal;
+          concreteMaterial.normalScale?.set?.(0.38, 0.38);
+          concreteMaterial.roughnessMap = concreteRoughness;
+          concreteMaterial.bumpMap = null;
+          concreteMaterial.roughness = 0.88;
+          concreteMaterial.needsUpdate = true;
+        } catch {
+          // Scanned PBR maps are an enhancement; procedural maps remain active.
+        }
+
+        try {
+          const { RGBELoader } = await import("three/addons/loaders/RGBELoader.js");
+          const hdr = await new RGBELoader().loadAsync("/textures/ultra/factory-yard-1k.hdr");
+          hdr.mapping = THREE.EquirectangularReflectionMapping;
+          scene.environment = hdr;
+          scene.environmentIntensity = ultraRenderer ? 0.84 : 0.68;
+          environmentTarget?.dispose?.();
+          environmentTarget = hdr;
+        } catch {
+          // The generated outdoor environment remains if the HDRI is unavailable.
+        }
+      }
+
       let loadedHeroAssets = 0;
       root.dataset.heroAssets = "procedural";
 
@@ -671,6 +744,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         canvas.removeEventListener("webglcontextlost", onContextLost);
         supplyScene.dispose();
         renderPipeline?.dispose?.();
+        importedTextures.forEach((texture) => texture.dispose?.());
         environmentTarget?.dispose?.();
         renderer.dispose();
       };
