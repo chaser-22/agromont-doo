@@ -444,6 +444,38 @@ export function createDetailedFarmHall(
   ridgeCap.position.set(0, 3.94, 0);
   group.add(ridgeCap);
 
+  // Standing seams create real roof scale without separate roof-sheet meshes.
+  const seamPerSlope = options.lowPower ? 3 : options.mobile ? 5 : 7;
+  const roofSeamGeo = new THREE.BoxGeometry(length * 0.955, 0.035, 0.045);
+  const roofSeams = new THREE.InstancedMesh(roofSeamGeo, materials.galvanized, seamPerSlope * 2);
+  const roofSeamDummy = new THREE.Object3D();
+  let roofSeamIndex = 0;
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < seamPerSlope; i++) {
+      const t = (i + 1) / (seamPerSlope + 1);
+      const z = side * (width * 0.5 * t);
+      const y = 2.55 + 1.35 * (1 - t) + 0.035;
+      roofSeamDummy.position.set(0, y, z);
+      roofSeamDummy.rotation.set(0, 0, 0);
+      roofSeamDummy.updateMatrix();
+      roofSeams.setMatrixAt(roofSeamIndex++, roofSeamDummy.matrix);
+    }
+  }
+  roofSeams.instanceMatrix.needsUpdate = true;
+  group.add(roofSeams);
+
+  if (!options.lowPower) {
+    const endFlashingGeo = new THREE.BoxGeometry(0.07, 0.07, width * 0.49);
+    for (const x of [-length * 0.485, length * 0.485]) {
+      for (const side of [-1, 1]) {
+        const flashing = new THREE.Mesh(endFlashingGeo, materials.galvanized);
+        flashing.position.set(x, 3.225, side * width * 0.25);
+        flashing.rotation.x = side * Math.atan2(1.35, width * 0.5);
+        group.add(flashing);
+      }
+    }
+  }
+
   for (const z of [-width / 2 - 0.09, width / 2 + 0.09]) {
     const gutter = new THREE.Mesh(
       new THREE.CylinderGeometry(0.045, 0.045, length * 0.96, 10),
@@ -586,56 +618,73 @@ export function createDetailedTruck(
     group.add(ribs);
   }
 
-  const cab = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.85, 2.10, 2.15), materials.green),
-    options.shadows,
-  );
-  cab.position.set(-2.18, 1.58, 0);
+  // A shaped extruded cab silhouette avoids the toy-like stacked-box profile.
+  const cabShape = new THREE.Shape();
+  cabShape.moveTo(-3.52, 0.72);
+  cabShape.lineTo(-3.38, 1.28);
+  cabShape.lineTo(-3.05, 2.42);
+  cabShape.lineTo(-2.72, 2.70);
+  cabShape.lineTo(-1.38, 2.70);
+  cabShape.lineTo(-1.22, 2.42);
+  cabShape.lineTo(-1.18, 0.72);
+  cabShape.closePath();
+  const cabGeometry = new THREE.ExtrudeGeometry(cabShape, {
+    depth: 2.08,
+    bevelEnabled: true,
+    bevelSegments: options.lowPower ? 1 : 2,
+    bevelSize: 0.045,
+    bevelThickness: 0.035,
+    curveSegments: 1,
+    steps: 1,
+  });
+  cabGeometry.translate(0, 0, -1.04);
+  cabGeometry.computeVertexNormals();
+  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.green), options.shadows);
   group.add(cab);
 
-  const hood = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.82, 1.96), materials.green),
-    options.shadows,
-  );
-  hood.position.set(-3.28, 1.16, 0);
-  group.add(hood);
-
-  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.78, 1.72), materials.glass);
-  windscreen.position.set(-3.115, 1.95, 0);
+  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.82, 1.70), materials.glass);
+  windscreen.position.set(-3.075, 2.02, 0);
+  windscreen.rotation.z = -0.275;
   group.add(windscreen);
 
-  const windscreenDivider = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.80, 0.045), materials.darkMetal);
-  windscreenDivider.position.set(-3.15, 1.95, 0);
+  const windscreenDivider = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.84, 0.042), materials.darkMetal);
+  windscreenDivider.position.set(-3.11, 2.02, 0);
+  windscreenDivider.rotation.z = -0.275;
   group.add(windscreenDivider);
 
   const cabRoof = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.16, 2.24), materials.green),
+    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.green),
     options.shadows,
   );
-  cabRoof.position.set(-2.24, 2.69, 0);
+  cabRoof.position.set(-2.10, 2.73, 0);
   group.add(cabRoof);
 
+  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.green);
+  lowerValance.position.set(-3.37, 0.93, 0);
+  lowerValance.rotation.z = -0.10;
+  group.add(lowerValance);
+
   for (const z of [-1.095, 1.095]) {
-    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.66, 0.045), materials.glass);
-    sideWindow.position.set(-2.55, 2.03, z);
+    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.66, 0.045), materials.glass);
+    sideWindow.position.set(-2.18, 2.03, z);
     group.add(sideWindow);
 
     const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.045, 0.035), materials.darkMetal);
-    doorHandle.position.set(-1.98, 1.75, z * 1.012);
+    doorHandle.position.set(-1.72, 1.72, z * 1.012);
     group.add(doorHandle);
   }
 
   const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.22, 2.08), materials.galvanized);
-  bumper.position.set(-3.61, 0.77, 0);
+  bumper.position.set(-3.57, 0.72, 0);
   group.add(bumper);
 
   const grille = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.48, 1.20), materials.darkMetal);
-  grille.position.set(-3.38, 1.05, 0);
+  grille.position.set(-3.48, 1.08, 0);
   group.add(grille);
 
   for (const z of [-0.72, 0.72]) {
     const light = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.18, 0.28), materials.lightLens);
-    light.position.set(-3.41, 1.28, z);
+    light.position.set(-3.47, 1.34, z);
     group.add(light);
 
     const mirrorArm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.50, 0.05), materials.darkMetal);
@@ -682,9 +731,22 @@ export function createDetailedTruck(
       hub.position.set(x, 0.47, z * 1.015);
       group.add(hub);
 
-      const mudguard = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.10, 0.34), materials.darkMetal);
-      mudguard.position.set(x, 0.92, z);
-      group.add(mudguard);
+      const sidewall = new THREE.Mesh(
+        new THREE.TorusGeometry(0.355, 0.035, options.lowPower ? 5 : 7, options.lowPower ? 14 : 22),
+        materials.darkMetal,
+      );
+      sidewall.position.set(x, 0.47, z * 1.018);
+      group.add(sidewall);
+
+      if (!options.lowPower) {
+        const arch = new THREE.Mesh(
+          new THREE.TorusGeometry(0.54, 0.045, 6, 20, Math.PI),
+          materials.darkMetal,
+        );
+        arch.position.set(x, 0.56, z * 1.018);
+        arch.rotation.z = 0;
+        group.add(arch);
+      }
     }
   }
 
