@@ -127,32 +127,75 @@ export async function installAuthoredHeroAssets(
   const loadedAssets: LoadedAsset[] = [];
   const loadedNames: string[] = [];
   const failedNames: string[] = [];
+  let disposed = false;
+
+  const streamLowerLods = async (
+    config: (typeof ASSETS)[number],
+    lodObject: any,
+  ) => {
+    const results = await Promise.allSettled(
+      [1, 2].map((lod) =>
+        loader
+          .loadAsync(`/assets/hero/${config.name}-lod${lod}.glb`)
+          .then((gltf: any) => ({ lod, gltf })),
+      ),
+    );
+
+    if (disposed) {
+      results.forEach((result) => {
+        if (result.status === "fulfilled") disposeObject(result.value.gltf.scene);
+      });
+      return;
+    }
+
+    results.forEach((result) => {
+      if (result.status !== "fulfilled") {
+        console.warn(
+          `[agromont] secondary LOD failed for ${config.name}; keeping higher detail`,
+          result.reason,
+        );
+        return;
+      }
+
+      const { lod, gltf } = result.value;
+      const model = gltf.scene;
+      model.name = `${config.name}_lod${lod}`;
+      prepareModel(model, options.shadows);
+      lodObject.addLevel(model, config.distances[lod]);
+    });
+  };
 
   const loadOne = async (config: (typeof ASSETS)[number]) => {
     const slot = slots[config.key];
     if (!slot) return;
 
     try {
-      const gltfs = await Promise.all(
-        [0, 1, 2].map((lod) =>
-          loader.loadAsync(`/assets/hero/${config.name}-lod${lod}.glb`),
-        ),
+      // LOD0 is the critical path. It replaces the procedural hero as soon as
+      // the authored high-detail asset has decoded. Lower LODs then stream in
+      // without delaying first useful render or deterministic QA readiness.
+      const gltf = await loader.loadAsync(
+        `/assets/hero/${config.name}-lod0.glb`,
       );
+
+      if (disposed) {
+        disposeObject(gltf.scene);
+        return;
+      }
 
       const lodObject = new THREE.LOD();
       lodObject.name = `Authored_${config.name}`;
 
-      gltfs.forEach((gltf: any, index: number) => {
-        const model = gltf.scene;
-        model.name = `${config.name}_lod${index}`;
-        prepareModel(model, options.shadows);
-        lodObject.addLevel(model, config.distances[index]);
-      });
+      const model = gltf.scene;
+      model.name = `${config.name}_lod0`;
+      prepareModel(model, options.shadows);
+      lodObject.addLevel(model, config.distances[0]);
 
       slot.mount.add(lodObject);
       slot.fallback.visible = false;
       loadedAssets.push({ name: config.name, lod: lodObject, slot });
       loadedNames.push(config.name);
+
+      void streamLowerLods(config, lodObject);
     } catch (error) {
       console.warn(`[agromont] keeping procedural fallback for ${config.name}`, error);
       failedNames.push(config.name);
@@ -165,6 +208,7 @@ export async function installAuthoredHeroAssets(
     loaded: loadedNames,
     failed: failedNames,
     dispose() {
+      disposed = true;
       loadedAssets.forEach(({ lod, slot }) => {
         slot.fallback.visible = true;
         slot.mount.remove(lod);
