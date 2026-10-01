@@ -259,14 +259,36 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpScale: 0.026,
     }),
     greenCutaway: new THREE.MeshPhysicalMaterial({
-      color: 0x183f2c,
-      roughness: 0.52,
-      metalness: 0.10,
+      color: 0xd6d1c4,
+      roughness: 0.70,
+      metalness: 0.035,
       roughnessMap: surfaceMaps.paint,
+      bumpMap: surfaceMaps.corrugation,
+      bumpScale: 0.014,
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
-      envMapIntensity: 0.66,
+      envMapIntensity: 0.48,
+    }),
+    stainless: new THREE.MeshStandardMaterial({
+      color: 0xc2c6c4,
+      roughness: 0.34,
+      metalness: 0.74,
+      roughnessMap: surfaceMaps.steelNoise,
+      envMapIntensity: 0.88,
+    }),
+    dustBlue: new THREE.MeshStandardMaterial({
+      color: 0x195e91,
+      roughness: 0.48,
+      metalness: 0.30,
+      roughnessMap: surfaceMaps.paint,
+      envMapIntensity: 0.58,
+    }),
+    safetyYellow: new THREE.MeshStandardMaterial({
+      color: 0xe0ae25,
+      roughness: 0.50,
+      metalness: 0.18,
+      roughnessMap: surfaceMaps.paint,
     }),
     concrete: new THREE.MeshStandardMaterial({
       color: 0x85857d,
@@ -619,6 +641,22 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   feedMain.position.y = 3.78;
   feedMill.add(feedMain);
 
+  // Public Spuž references show a light corrugated industrial hall with dark-grey structural accents.
+  const facadePierGeo = new THREE.BoxGeometry(0.34, 7.35, 0.26);
+  const facadePiers = new THREE.InstancedMesh(facadePierGeo, materials.darkMetal, 4);
+  const facadePierDummy = new THREE.Object3D();
+  [-3.72, -1.25, 1.25, 3.72].forEach((x, index) => {
+    facadePierDummy.position.set(x, 3.72, 3.34);
+    facadePierDummy.updateMatrix();
+    facadePiers.setMatrixAt(index, facadePierDummy.matrix);
+  });
+  facadePiers.instanceMatrix.needsUpdate = true;
+  feedMill.add(facadePiers);
+
+  const facadeBand = new THREE.Mesh(new THREE.BoxGeometry(8.25, 0.28, 0.24), materials.darkMetal);
+  facadeBand.position.set(0, 7.18, 3.34);
+  feedMill.add(facadeBand);
+
   // External steel frame and bracing make the mill read as engineered infrastructure.
   const frameColumnGeo = new THREE.BoxGeometry(0.15, 7.25, 0.16);
   const frameColumns = new THREE.InstancedMesh(frameColumnGeo, materials.galvanized, 4);
@@ -664,7 +702,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   facadeSeams.position.y = 0.1;
   feedMill.add(facadeSeams);
 
-  const feedUpper = addShadow(new THREE.Mesh(new THREE.BoxGeometry(4.5, 5.0, 4.1), materials.siloMetal), shadows);
+  const feedUpper = addShadow(new THREE.Mesh(new THREE.BoxGeometry(4.5, 5.0, 4.1), materials.offWhite), shadows);
   feedUpper.position.set(0, 9.15, 0);
   feedMill.add(feedUpper);
 
@@ -680,7 +718,13 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   controlWindow.position.set(1.7, 4.8, 3.27);
   feedMill.add(controlWindow);
 
-  const spuzSignTexture = createSignTexture(THREE, ["FABRIKA STOČNE HRANE", "SPUŽ / PROIZVODNJA"]);
+  const spuzSignTexture = createSignTexture(THREE, ["FABRIKA STOČNE HRANE", "SPUŽ"], {
+    accent: "#2d7b43",
+    background: "#e9e5da",
+    foreground: "#2c7542",
+    width: 1024,
+    height: 256,
+  });
   const spuzSignMaterial = new THREE.MeshStandardMaterial({
     map: spuzSignTexture,
     roughness: 0.65,
@@ -698,6 +742,50 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const millCatwalk = createIndustrialCatwalk(THREE, materials, 7.4, detailOptions);
   millCatwalk.position.set(0.2, 5.65, 3.46);
   feedMill.add(millCatwalk);
+
+  const dustCollector = new THREE.Group();
+  const collectorBox = addShadow(
+    new THREE.Mesh(new THREE.BoxGeometry(1.55, 2.25, 1.18), materials.dustBlue),
+    shadows,
+  );
+  collectorBox.position.y = 2.18;
+  dustCollector.add(collectorBox);
+  const collectorHopper = addShadow(
+    new THREE.Mesh(new THREE.ConeGeometry(0.78, 1.28, 4), materials.dustBlue),
+    shadows,
+  );
+  collectorHopper.rotation.y = Math.PI / 4;
+  collectorHopper.rotation.x = Math.PI;
+  collectorHopper.position.y = 0.52;
+  dustCollector.add(collectorHopper);
+  const collectorTop = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.12, 1.34), materials.darkMetal);
+  collectorTop.position.y = 3.34;
+  dustCollector.add(collectorTop);
+  for (const x of [-0.62, 0.62]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 2.0, 0.09), materials.darkMetal);
+    leg.position.set(x, 0.82, 0);
+    dustCollector.add(leg);
+  }
+  const collectorLadder = createSafetyLadder(THREE, materials.safetyYellow, 3.15, 0.34, detailOptions);
+  collectorLadder.position.set(-0.86, 0.15, 0.0);
+  collectorLadder.rotation.y = Math.PI / 2;
+  dustCollector.add(collectorLadder);
+  const collectorPlatform = createIndustrialCatwalk(THREE, materials, 1.95, detailOptions);
+  collectorPlatform.position.set(0, 3.38, 0);
+  dustCollector.add(collectorPlatform);
+  dustCollector.position.set(5.05, 0, 0.55);
+  feedMill.add(dustCollector);
+
+  const collectorDuct = new THREE.Mesh(
+    new THREE.TorusGeometry(0.68, 0.16, 10, mobile ? 18 : 26, Math.PI / 2),
+    materials.galvanized,
+  );
+  collectorDuct.position.set(4.15, 4.15, 0.55);
+  collectorDuct.rotation.set(0, Math.PI / 2, 0);
+  feedMill.add(collectorDuct);
+  const collectorRun = createPipe(THREE, materials.galvanized, 2.1, 0.16, true);
+  collectorRun.position.set(3.25, 4.84, 0.55);
+  feedMill.add(collectorRun);
 
   const loadOut = new THREE.Group();
   const hopperBody = addShadow(
@@ -859,7 +947,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   sortingPlinth.position.y = 0.15;
   sorting.add(sortingPlinth);
 
-  const sortingHall = addShadow(new THREE.Mesh(new THREE.BoxGeometry(10.6, 3.8, 5.2), materials.green), shadows);
+  const sortingHall = addShadow(new THREE.Mesh(new THREE.BoxGeometry(10.6, 3.8, 5.2), materials.offWhite), shadows);
   sortingHall.position.y = 1.78;
   sorting.add(sortingHall);
 
@@ -900,63 +988,112 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   sortSign.position.set(0.4, 1.06, 2.66);
   sorting.add(sortSign);
 
-  const beltFrame = addShadow(new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.22, 1.25), materials.darkMetal), shadows);
-  beltFrame.position.set(-0.3, 0.92, 3.05);
-  sorting.add(beltFrame);
-
-  for (const z of [2.48, 3.62]) {
-    const rail = new THREE.Mesh(new THREE.BoxGeometry(8.75, 0.055, 0.055), materials.galvanized);
-    rail.position.set(-0.3, 1.42, z);
-    sorting.add(rail);
-    const midRail = rail.clone();
-    midRail.position.y = 1.18;
-    sorting.add(midRail);
-  }
-  for (const x of [-4.45, -2.45, -0.45, 1.55, 3.55]) {
-    for (const z of [2.52, 3.58]) {
-      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.95, 0.09), materials.galvanized);
-      leg.position.set(x, 0.48, z);
-      sorting.add(leg);
+  // Open, wash-down grader architecture based on modern commercial egg-grading systems:
+  // multiple visible tracks, stainless construction and clear service access.
+  const grader = new THREE.Group();
+  const graderLength = 8.65;
+  const graderRows = lowPower ? 2 : mobile ? 3 : 4;
+  const rowSpacing = 0.31;
+  const graderZ = 3.05;
+  const frameRailGeo = new THREE.BoxGeometry(graderLength, 0.085, 0.085);
+  for (const z of [-0.78, 0.78]) {
+    for (const y of [0.58, 1.44]) {
+      const rail = new THREE.Mesh(frameRailGeo, materials.stainless);
+      rail.position.set(-0.22, y, graderZ + z);
+      grader.add(rail);
     }
   }
-  const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.62, 18), materials.darkMetal);
-  driveMotor.rotation.z = Math.PI / 2;
-  driveMotor.position.set(4.35, 0.93, 3.78);
-  sorting.add(driveMotor);
-  const motorGuard = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.66, 0.58), materials.galvanized);
-  motorGuard.position.set(4.0, 0.94, 3.78);
-  sorting.add(motorGuard);
 
-  const rollers: any[] = [];
-  const rollerCount = lowPower ? 8 : 16;
-  for (let i = 0; i < rollerCount; i++) {
-    const roller = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.09, 0.09, 1.08, 14),
-      materials.galvanized,
-    );
-    roller.rotation.x = Math.PI / 2;
-    roller.position.set(-4.25 + i * (8.15 / Math.max(1, rollerCount - 1)), 1.07, 3.05);
-    sorting.add(roller);
-    rollers.push(roller);
+  const legGeo = new THREE.BoxGeometry(0.10, 1.10, 0.10);
+  const legCount = lowPower ? 8 : 12;
+  const legs = new THREE.InstancedMesh(legGeo, materials.stainless, legCount);
+  const graderDummy = new THREE.Object3D();
+  for (let i = 0; i < legCount / 2; i++) {
+    const x = -4.05 + i * (8.0 / Math.max(1, legCount / 2 - 1));
+    for (const z of [-0.72, 0.72]) {
+      const index = i * 2 + (z > 0 ? 1 : 0);
+      graderDummy.position.set(x, 0.56, graderZ + z);
+      graderDummy.updateMatrix();
+      legs.setMatrixAt(index, graderDummy.matrix);
+    }
   }
+  legs.instanceMatrix.needsUpdate = true;
+  grader.add(legs);
 
-  const eggGeometry = makeEggGeometry(THREE);
+  const trackGeo = new THREE.BoxGeometry(graderLength * 0.94, 0.08, 0.14);
+  const tracks = new THREE.InstancedMesh(trackGeo, materials.darkMetal, graderRows);
+  for (let r = 0; r < graderRows; r++) {
+    graderDummy.position.set(-0.26, 1.15, graderZ + (r - (graderRows - 1) / 2) * rowSpacing);
+    graderDummy.updateMatrix();
+    tracks.setMatrixAt(r, graderDummy.matrix);
+  }
+  tracks.instanceMatrix.needsUpdate = true;
+  grader.add(tracks);
+
+  const carrierGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.18, 10);
+  const carrierCount = lowPower ? 24 : mobile ? 42 : 68;
+  const carriers = new THREE.InstancedMesh(carrierGeo, materials.stainless, carrierCount);
+  for (let i = 0; i < carrierCount; i++) {
+    const row = i % graderRows;
+    const col = Math.floor(i / graderRows);
+    const cols = Math.ceil(carrierCount / graderRows);
+    graderDummy.position.set(
+      -4.15 + (col / Math.max(1, cols - 1)) * 7.75,
+      1.20,
+      graderZ + (row - (graderRows - 1) / 2) * rowSpacing,
+    );
+    graderDummy.rotation.set(Math.PI / 2, 0, 0);
+    graderDummy.updateMatrix();
+    carriers.setMatrixAt(i, graderDummy.matrix);
+  }
+  carriers.instanceMatrix.needsUpdate = true;
+  grader.add(carriers);
+
   const eggs: any[] = [];
-  const eggCount = lowPower ? 4 : mobile ? 6 : 10;
+  const eggGeometry = makeEggGeometry(THREE);
+  const eggCount = lowPower ? 4 : mobile ? 7 : 12;
   for (let i = 0; i < eggCount; i++) {
     const egg = addShadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
-    egg.scale.setScalar(0.30);
-    egg.position.set(-4.0 + i * 0.72, 1.39, 3.05);
-    sorting.add(egg);
+    egg.scale.setScalar(0.265);
+    egg.position.set(-3.9 + i * (7.0 / Math.max(1, eggCount - 1)), 1.46, graderZ + ((i % graderRows) - (graderRows - 1) / 2) * rowSpacing);
+    grader.add(egg);
     eggs.push(egg);
   }
 
+  const infeedGuard = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.80, 1.82), materials.stainless);
+  infeedGuard.position.set(-3.82, 1.72, graderZ);
+  grader.add(infeedGuard);
+  const inspectionHood = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.62, 1.92), materials.darkMetal);
+  inspectionHood.position.set(-0.65, 1.75, graderZ);
+  grader.add(inspectionHood);
+  const inspectionWindow = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 0.035), materials.glass);
+  inspectionWindow.position.set(-0.65, 1.77, graderZ + 0.98);
+  grader.add(inspectionWindow);
+
+  const packingLaneCount = lowPower ? 3 : mobile ? 4 : 6;
+  for (let lane = 0; lane < packingLaneCount; lane++) {
+    const laneZ = 1.45 + lane * (2.85 / Math.max(1, packingLaneCount - 1));
+    const laneFrame = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.12, 0.36), materials.stainless);
+    laneFrame.position.set(3.15, 0.92, laneZ);
+    grader.add(laneFrame);
+    const laneCover = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.82, 0.42), materials.offWhite);
+    laneCover.position.set(3.85, 1.35, laneZ);
+    grader.add(laneCover);
+  }
+
+  const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.58, 18), materials.darkMetal);
+  driveMotor.rotation.z = Math.PI / 2;
+  driveMotor.position.set(4.24, 0.88, graderZ + 0.95);
+  grader.add(driveMotor);
+  sorting.add(grader);
+
+  const rollers: any[] = [];
   const scannerArch = new THREE.Group();
-  const scannerTop = addShadow(new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.28, 1.72), materials.darkMetal), shadows);
+  const scannerTop = addShadow(new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.22, 1.72), materials.stainless), shadows);
   scannerTop.position.set(0, 1.75, 0);
   scannerArch.add(scannerTop);
   for (const z of [-0.74, 0.74]) {
-    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.20, 1.55, 0.20), materials.darkMetal);
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, 1.55, 0.12), materials.stainless);
     leg.position.set(0, 0.91, z);
     scannerArch.add(leg);
   }
@@ -1118,8 +1255,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
 
     eggs.forEach((egg, index) => {
       const t = ((index / eggs.length) + elapsed * 0.033) % 1;
-      egg.position.x = -4.0 + t * 7.55;
-      egg.position.y = 1.39 + Math.sin(t * Math.PI * 8) * 0.014;
+      egg.position.x = -3.9 + t * 7.05;
+      egg.position.y = 1.46 + Math.sin(t * Math.PI * 8) * 0.012;
       egg.rotation.z = t * 0.24;
     });
 
