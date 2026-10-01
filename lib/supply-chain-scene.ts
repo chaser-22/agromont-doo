@@ -277,12 +277,20 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpScale: 0.035,
     }),
     asphalt: new THREE.MeshStandardMaterial({
-      color: 0x2f312f,
-      roughness: 0.98,
+      color: 0x303230,
+      roughness: 0.985,
       metalness: 0,
-      roughnessMap: surfaceMaps.concrete,
-      bumpMap: surfaceMaps.concrete,
-      bumpScale: 0.012,
+      roughnessMap: surfaceMaps.asphalt,
+      bumpMap: surfaceMaps.asphalt,
+      bumpScale: 0.018,
+    }),
+    gravel: new THREE.MeshStandardMaterial({
+      color: 0x726d62,
+      roughness: 1,
+      metalness: 0,
+      roughnessMap: surfaceMaps.asphalt,
+      bumpMap: surfaceMaps.asphalt,
+      bumpScale: 0.035,
     }),
     offWhite: new THREE.MeshStandardMaterial({
       color: 0xe8e1d2,
@@ -405,6 +413,31 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   outerGround.position.set(1, -0.52, 1);
   outerGround.receiveShadow = shadows;
   world.add(outerGround);
+
+  for (const z of [-13.55, 13.55]) {
+    const shoulder = new THREE.Mesh(new THREE.BoxGeometry(53.5, 0.08, 1.35), materials.gravel);
+    shoulder.position.set(1, -0.18, z);
+    shoulder.receiveShadow = shadows;
+    world.add(shoulder);
+  }
+
+  const tuftCount = lowPower ? 16 : mobile ? 26 : 46;
+  const tuftGeo = new THREE.ConeGeometry(0.10, 0.42, 5);
+  const tufts = new THREE.InstancedMesh(tuftGeo, materials.grass, tuftCount);
+  const tuftDummy = new THREE.Object3D();
+  for (let i = 0; i < tuftCount; i++) {
+    const side = i % 2 === 0 ? -1 : 1;
+    const x = -24.5 + ((i * 7.13) % 49);
+    const z = side * (14.15 + ((i * 3.71) % 1) * 1.45);
+    const scale = 0.70 + ((i * 0.37) % 1) * 0.75;
+    tuftDummy.position.set(x, 0.02, z);
+    tuftDummy.rotation.set(0, ((i * 1.91) % 1) * Math.PI, 0);
+    tuftDummy.scale.set(scale, scale, scale);
+    tuftDummy.updateMatrix();
+    tufts.setMatrixAt(i, tuftDummy.matrix);
+  }
+  tufts.instanceMatrix.needsUpdate = true;
+  world.add(tufts);
 
   const yard = addShadow(new THREE.Mesh(new THREE.BoxGeometry(52, 0.34, 27), materials.concrete), shadows);
   yard.position.set(1, -0.31, 0);
@@ -586,6 +619,47 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   feedMain.position.y = 3.78;
   feedMill.add(feedMain);
 
+  // External steel frame and bracing make the mill read as engineered infrastructure.
+  const frameColumnGeo = new THREE.BoxGeometry(0.15, 7.25, 0.16);
+  const frameColumns = new THREE.InstancedMesh(frameColumnGeo, materials.galvanized, 4);
+  const frameDummy = new THREE.Object3D();
+  [-3.65, -1.20, 1.20, 3.65].forEach((x, index) => {
+    frameDummy.position.set(x, 3.76, 3.39);
+    frameDummy.rotation.set(0, 0, 0);
+    frameDummy.scale.set(1, 1, 1);
+    frameDummy.updateMatrix();
+    frameColumns.setMatrixAt(index, frameDummy.matrix);
+  });
+  frameColumns.instanceMatrix.needsUpdate = true;
+  feedMill.add(frameColumns);
+
+  const beamGeo = new THREE.BoxGeometry(7.45, 0.13, 0.16);
+  const frameBeams = new THREE.InstancedMesh(beamGeo, materials.galvanized, 3);
+  [2.05, 4.45, 6.85].forEach((y, index) => {
+    frameDummy.position.set(0, y, 3.39);
+    frameDummy.rotation.set(0, 0, 0);
+    frameDummy.updateMatrix();
+    frameBeams.setMatrixAt(index, frameDummy.matrix);
+  });
+  frameBeams.instanceMatrix.needsUpdate = true;
+  feedMill.add(frameBeams);
+
+  if (!lowPower) {
+    const braceGeo = new THREE.BoxGeometry(2.78, 0.075, 0.075);
+    const braces = new THREE.InstancedMesh(braceGeo, materials.darkMetal, 6);
+    let braceIndex = 0;
+    for (const x of [-2.45, 0, 2.45]) {
+      for (const direction of [-1, 1]) {
+        frameDummy.position.set(x, direction < 0 ? 3.18 : 5.60, 3.48);
+        frameDummy.rotation.set(0, 0, direction * 0.72);
+        frameDummy.updateMatrix();
+        braces.setMatrixAt(braceIndex++, frameDummy.matrix);
+      }
+    }
+    braces.instanceMatrix.needsUpdate = true;
+    feedMill.add(braces);
+  }
+
   const facadeSeams = createPanelSeams(THREE, materials.darkMetal, 8.1, 7.2, 3.235, lowPower ? 6 : 12);
   facadeSeams.position.y = 0.1;
   feedMill.add(facadeSeams);
@@ -625,6 +699,42 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   millCatwalk.position.set(0.2, 5.65, 3.46);
   feedMill.add(millCatwalk);
 
+  const loadOut = new THREE.Group();
+  const hopperBody = addShadow(
+    new THREE.Mesh(new THREE.CylinderGeometry(0.74, 0.74, 1.30, mobile ? 18 : 24), materials.galvanized),
+    shadows,
+  );
+  hopperBody.position.y = 1.65;
+  loadOut.add(hopperBody);
+  const hopperCone = addShadow(
+    new THREE.Mesh(new THREE.ConeGeometry(0.74, 1.22, mobile ? 18 : 24), materials.galvanized),
+    shadows,
+  );
+  hopperCone.rotation.x = Math.PI;
+  hopperCone.position.y = 0.42;
+  loadOut.add(hopperCone);
+  const hopperOutlet = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.65, 12), materials.darkMetal);
+  hopperOutlet.position.y = -0.48;
+  loadOut.add(hopperOutlet);
+  for (const x of [-0.58, 0.58]) {
+    const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 2.55, 0.09), materials.darkMetal);
+    leg.position.set(x, 0.55, 0);
+    loadOut.add(leg);
+  }
+  loadOut.position.set(3.05, 4.10, 4.15);
+  feedMill.add(loadOut);
+
+  const elbow = new THREE.Mesh(
+    new THREE.TorusGeometry(0.52, 0.11, 8, mobile ? 14 : 20, Math.PI / 2),
+    materials.galvanized,
+  );
+  elbow.position.set(3.08, 7.00, 3.62);
+  elbow.rotation.set(Math.PI / 2, 0, Math.PI / 2);
+  feedMill.add(elbow);
+  const hopperDuct = createPipe(THREE, materials.galvanized, 2.55, 0.11, false);
+  hopperDuct.position.set(3.08, 6.10, 4.14);
+  feedMill.add(hopperDuct);
+
   const cyclones: any[] = [];
   const cycloneCount = lowPower ? 2 : 3;
   for (let i = 0; i < cycloneCount; i++) {
@@ -652,6 +762,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     cone.rotation.x = Math.PI;
     cone.position.set(-2.25, 2.82, z);
     feedMill.add(cone);
+
+    if (!lowPower) {
+      for (const y of [3.32, 5.18, 7.06]) {
+        const flange = new THREE.Mesh(new THREE.TorusGeometry(0.585, 0.035, 6, 20), materials.darkMetal);
+        flange.rotation.x = Math.PI / 2;
+        flange.position.set(-2.25, y, z);
+        feedMill.add(flange);
+      }
+    }
   }
 
   const processPipeGeometry = new THREE.CylinderGeometry(0.11, 0.11, 6.3, 14);

@@ -91,6 +91,42 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     }
     concreteCtx.stroke();
   }
+  concreteCtx.globalCompositeOperation = "multiply";
+  for (let i = 0; i < 9; i++) {
+    const cx = concreteRandom() * size;
+    const cy = concreteRandom() * size;
+    const r = size * (0.05 + concreteRandom() * 0.12);
+    const stain = concreteCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    stain.addColorStop(0, "rgba(72,67,58,.22)");
+    stain.addColorStop(1, "rgba(72,67,58,0)");
+    concreteCtx.fillStyle = stain;
+    concreteCtx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+  concreteCtx.globalCompositeOperation = "source-over";
+
+  const asphaltCanvas = document.createElement("canvas");
+  asphaltCanvas.width = size;
+  asphaltCanvas.height = size;
+  const asphaltCtx = asphaltCanvas.getContext("2d")!;
+  const asphaltRandom = seeded(41);
+  asphaltCtx.fillStyle = "#777";
+  asphaltCtx.fillRect(0, 0, size, size);
+  const asphaltImage = asphaltCtx.getImageData(0, 0, size, size);
+  for (let i = 0; i < asphaltImage.data.length; i += 4) {
+    const base = 82 + Math.round(asphaltRandom() * 60);
+    const aggregate = asphaltRandom() > 0.965 ? 34 : 0;
+    asphaltImage.data[i] = Math.min(190, base + aggregate);
+    asphaltImage.data[i + 1] = Math.min(190, base + aggregate);
+    asphaltImage.data[i + 2] = Math.min(190, base + aggregate - 2);
+    asphaltImage.data[i + 3] = 255;
+  }
+  asphaltCtx.putImageData(asphaltImage, 0, 0);
+  asphaltCtx.globalAlpha = 0.16;
+  for (let y = 0; y < size; y += 19) {
+    asphaltCtx.fillStyle = "#3d3d3d";
+    asphaltCtx.fillRect(0, y, size, 1);
+  }
+  asphaltCtx.globalAlpha = 1;
 
   const paintCanvas = document.createElement("canvas");
   paintCanvas.width = size;
@@ -104,6 +140,14 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     const v = 100 + Math.round(paintRandom() * 80);
     paintCtx.fillStyle = `rgb(${v},${v},${v})`;
     paintCtx.fillRect(0, y, size, 1);
+  }
+  paintCtx.globalAlpha = 0.14;
+  for (let i = 0; i < 18; i++) {
+    const x = Math.floor(paintRandom() * size);
+    const w = 1 + Math.floor(paintRandom() * 3);
+    const h = Math.floor(size * (0.18 + paintRandom() * 0.58));
+    paintCtx.fillStyle = paintRandom() > 0.5 ? "#555" : "#c2c2c2";
+    paintCtx.fillRect(x, 0, w, h);
   }
   paintCtx.globalAlpha = 1;
 
@@ -140,6 +184,7 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     steelNoise: canvasTexture(THREE, steelCanvas),
     corrugation: canvasTexture(THREE, corrugationCanvas),
     concrete: canvasTexture(THREE, concreteCanvas),
+    asphalt: canvasTexture(THREE, asphaltCanvas),
     paint: canvasTexture(THREE, paintCanvas),
     rubber: canvasTexture(THREE, rubberCanvas),
     carton: canvasTexture(THREE, cartonCanvas),
@@ -148,6 +193,7 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
   maps.steelNoise.repeat.set(5, 8);
   maps.corrugation.repeat.set(4, 1);
   maps.concrete.repeat.set(8, 5);
+  maps.asphalt.repeat.set(10, 3);
   maps.paint.repeat.set(5, 7);
   maps.rubber.repeat.set(8, 2);
   maps.carton.repeat.set(4, 8);
@@ -413,6 +459,22 @@ export function createDetailedFarmHall(
   const hall = addShadow(new THREE.Mesh(geometry, materials.hallPanel), options.shadows);
   group.add(hall);
 
+  const roofAngle = Math.atan2(1.35, width * 0.5);
+  const roofSlope = Math.hypot(width * 0.5, 1.35);
+  const roofShellGeo = new THREE.BoxGeometry(length * 0.982, 0.055, roofSlope * 1.015);
+  const roofShells = new THREE.InstancedMesh(roofShellGeo, materials.roofMetal, 2);
+  const roofShellDummy = new THREE.Object3D();
+  [-1, 1].forEach((side, index) => {
+    roofShellDummy.position.set(0, 3.235, side * width * 0.25);
+    roofShellDummy.rotation.set(side * roofAngle, 0, 0);
+    roofShellDummy.updateMatrix();
+    roofShells.setMatrixAt(index, roofShellDummy.matrix);
+  });
+  roofShells.instanceMatrix.needsUpdate = true;
+  roofShells.castShadow = options.shadows;
+  roofShells.receiveShadow = options.shadows;
+  group.add(roofShells);
+
   // Real poultry halls sit on a concrete plinth and show repeated structural bays.
   const plinth = addShadow(
     new THREE.Mesh(new THREE.BoxGeometry(length * 0.985, 0.24, width + 0.10), materials.concrete),
@@ -443,6 +505,38 @@ export function createDetailedFarmHall(
   );
   ridgeCap.position.set(0, 3.94, 0);
   group.add(ridgeCap);
+
+  // Standing seams create real roof scale without separate roof-sheet meshes.
+  const seamPerSlope = options.lowPower ? 3 : options.mobile ? 5 : 7;
+  const roofSeamGeo = new THREE.BoxGeometry(length * 0.955, 0.035, 0.045);
+  const roofSeams = new THREE.InstancedMesh(roofSeamGeo, materials.galvanized, seamPerSlope * 2);
+  const roofSeamDummy = new THREE.Object3D();
+  let roofSeamIndex = 0;
+  for (const side of [-1, 1]) {
+    for (let i = 0; i < seamPerSlope; i++) {
+      const t = (i + 1) / (seamPerSlope + 1);
+      const z = side * (width * 0.5 * t);
+      const y = 2.55 + 1.35 * (1 - t) + 0.035;
+      roofSeamDummy.position.set(0, y, z);
+      roofSeamDummy.rotation.set(0, 0, 0);
+      roofSeamDummy.updateMatrix();
+      roofSeams.setMatrixAt(roofSeamIndex++, roofSeamDummy.matrix);
+    }
+  }
+  roofSeams.instanceMatrix.needsUpdate = true;
+  group.add(roofSeams);
+
+  if (!options.lowPower) {
+    const endFlashingGeo = new THREE.BoxGeometry(0.07, 0.07, width * 0.49);
+    for (const x of [-length * 0.485, length * 0.485]) {
+      for (const side of [-1, 1]) {
+        const flashing = new THREE.Mesh(endFlashingGeo, materials.galvanized);
+        flashing.position.set(x, 3.225, side * width * 0.25);
+        flashing.rotation.x = side * Math.atan2(1.35, width * 0.5);
+        group.add(flashing);
+      }
+    }
+  }
 
   for (const z of [-width / 2 - 0.09, width / 2 + 0.09]) {
     const gutter = new THREE.Mesh(
@@ -573,6 +667,20 @@ export function createDetailedTruck(
   cargo.position.set(1.25, 1.90, 0);
   group.add(cargo);
 
+  const trailerRailGeo = new THREE.BoxGeometry(5.32, 0.08, 0.06);
+  const trailerRails = new THREE.InstancedMesh(trailerRailGeo, materials.darkMetal, 4);
+  const railDummy = new THREE.Object3D();
+  let railIndex = 0;
+  for (const y of [0.78, 3.04]) {
+    for (const z of [-1.14, 1.14]) {
+      railDummy.position.set(1.25, y, z);
+      railDummy.updateMatrix();
+      trailerRails.setMatrixAt(railIndex++, railDummy.matrix);
+    }
+  }
+  trailerRails.instanceMatrix.needsUpdate = true;
+  group.add(trailerRails);
+
   if (!options.lowPower) {
     const ribGeo = new THREE.BoxGeometry(0.035, 2.15, 2.30);
     const ribs = new THREE.InstancedMesh(ribGeo, materials.darkMetal, 7);
@@ -586,56 +694,115 @@ export function createDetailedTruck(
     group.add(ribs);
   }
 
-  const cab = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.85, 2.10, 2.15), materials.green),
-    options.shadows,
-  );
-  cab.position.set(-2.18, 1.58, 0);
+  // A shaped extruded cab silhouette avoids the toy-like stacked-box profile.
+  const cabShape = new THREE.Shape();
+  cabShape.moveTo(-3.52, 0.72);
+  cabShape.lineTo(-3.38, 1.28);
+  cabShape.lineTo(-3.05, 2.42);
+  cabShape.lineTo(-2.72, 2.70);
+  cabShape.lineTo(-1.38, 2.70);
+  cabShape.lineTo(-1.22, 2.42);
+  cabShape.lineTo(-1.18, 0.72);
+  cabShape.closePath();
+  const cabGeometry = new THREE.ExtrudeGeometry(cabShape, {
+    depth: 2.08,
+    bevelEnabled: true,
+    bevelSegments: options.lowPower ? 1 : 2,
+    bevelSize: 0.045,
+    bevelThickness: 0.035,
+    curveSegments: 1,
+    steps: 1,
+  });
+  cabGeometry.translate(0, 0, -1.04);
+  cabGeometry.computeVertexNormals();
+  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.green), options.shadows);
   group.add(cab);
 
-  const hood = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(0.55, 0.82, 1.96), materials.green),
-    options.shadows,
-  );
-  hood.position.set(-3.28, 1.16, 0);
-  group.add(hood);
-
-  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.78, 1.72), materials.glass);
-  windscreen.position.set(-3.115, 1.95, 0);
+  const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.82, 1.70), materials.glass);
+  windscreen.position.set(-3.075, 2.02, 0);
+  windscreen.rotation.z = -0.275;
   group.add(windscreen);
 
-  const windscreenDivider = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.80, 0.045), materials.darkMetal);
-  windscreenDivider.position.set(-3.15, 1.95, 0);
+  const windscreenDivider = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.84, 0.042), materials.darkMetal);
+  windscreenDivider.position.set(-3.11, 2.02, 0);
+  windscreenDivider.rotation.z = -0.275;
   group.add(windscreenDivider);
 
   const cabRoof = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.16, 2.24), materials.green),
+    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.green),
     options.shadows,
   );
-  cabRoof.position.set(-2.24, 2.69, 0);
+  cabRoof.position.set(-2.10, 2.73, 0);
   group.add(cabRoof);
 
+  const sunVisor = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 1.86), materials.darkMetal);
+  sunVisor.position.set(-2.93, 2.52, 0);
+  sunVisor.rotation.z = -0.16;
+  group.add(sunVisor);
+
+  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.green);
+  lowerValance.position.set(-3.37, 0.93, 0);
+  lowerValance.rotation.z = -0.10;
+  group.add(lowerValance);
+
   for (const z of [-1.095, 1.095]) {
-    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.66, 0.045), materials.glass);
-    sideWindow.position.set(-2.55, 2.03, z);
+    const sideWindow = new THREE.Mesh(new THREE.BoxGeometry(0.92, 0.66, 0.045), materials.glass);
+    sideWindow.position.set(-2.18, 2.03, z);
     group.add(sideWindow);
 
     const doorHandle = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.045, 0.035), materials.darkMetal);
-    doorHandle.position.set(-1.98, 1.75, z * 1.012);
+    doorHandle.position.set(-1.72, 1.72, z * 1.012);
     group.add(doorHandle);
   }
 
   const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.22, 2.08), materials.galvanized);
-  bumper.position.set(-3.61, 0.77, 0);
+  bumper.position.set(-3.57, 0.72, 0);
   group.add(bumper);
 
   const grille = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.48, 1.20), materials.darkMetal);
-  grille.position.set(-3.38, 1.05, 0);
+  grille.position.set(-3.48, 1.08, 0);
   group.add(grille);
+
+  const grilleSlatGeo = new THREE.BoxGeometry(0.035, 0.035, 1.04);
+  const grilleSlats = new THREE.InstancedMesh(grilleSlatGeo, materials.galvanized, 5);
+  const detailDummy = new THREE.Object3D();
+  for (let i = 0; i < 5; i++) {
+    detailDummy.position.set(-3.515, 0.90 + i * 0.09, 0);
+    detailDummy.rotation.set(0, 0, 0);
+    detailDummy.scale.set(1, 1, 1);
+    detailDummy.updateMatrix();
+    grilleSlats.setMatrixAt(i, detailDummy.matrix);
+  }
+  grilleSlats.instanceMatrix.needsUpdate = true;
+  group.add(grilleSlats);
+
+  const stepGeo = new THREE.BoxGeometry(0.72, 0.10, 0.24);
+  const steps = new THREE.InstancedMesh(stepGeo, materials.galvanized, 2);
+  [-1, 1].forEach((side, index) => {
+    detailDummy.position.set(-1.58, 0.72, side * 1.14);
+    detailDummy.updateMatrix();
+    steps.setMatrixAt(index, detailDummy.matrix);
+  });
+  steps.instanceMatrix.needsUpdate = true;
+  group.add(steps);
+
+  const seamGeo = new THREE.BoxGeometry(0.035, 1.35, 0.025);
+  const doorSeams = new THREE.InstancedMesh(seamGeo, materials.darkMetal, 4);
+  let seamIndex = 0;
+  for (const z of [-1.055, 1.055]) {
+    for (const x of [-2.64, -1.49]) {
+      detailDummy.position.set(x, 1.55, z);
+      detailDummy.rotation.set(0, 0, 0);
+      detailDummy.updateMatrix();
+      doorSeams.setMatrixAt(seamIndex++, detailDummy.matrix);
+    }
+  }
+  doorSeams.instanceMatrix.needsUpdate = true;
+  group.add(doorSeams);
 
   for (const z of [-0.72, 0.72]) {
     const light = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.18, 0.28), materials.lightLens);
-    light.position.set(-3.41, 1.28, z);
+    light.position.set(-3.47, 1.34, z);
     group.add(light);
 
     const mirrorArm = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.50, 0.05), materials.darkMetal);
@@ -682,9 +849,22 @@ export function createDetailedTruck(
       hub.position.set(x, 0.47, z * 1.015);
       group.add(hub);
 
-      const mudguard = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.10, 0.34), materials.darkMetal);
-      mudguard.position.set(x, 0.92, z);
-      group.add(mudguard);
+      const sidewall = new THREE.Mesh(
+        new THREE.TorusGeometry(0.355, 0.035, options.lowPower ? 5 : 7, options.lowPower ? 14 : 22),
+        materials.darkMetal,
+      );
+      sidewall.position.set(x, 0.47, z * 1.018);
+      group.add(sidewall);
+
+      if (!options.lowPower) {
+        const arch = new THREE.Mesh(
+          new THREE.TorusGeometry(0.54, 0.045, 6, 20, Math.PI),
+          materials.darkMetal,
+        );
+        arch.position.set(x, 0.56, z * 1.018);
+        arch.rotation.z = 0;
+        group.add(arch);
+      }
     }
   }
 
