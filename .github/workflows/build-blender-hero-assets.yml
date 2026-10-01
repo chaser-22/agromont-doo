@@ -1,4 +1,5 @@
 name: Build Blender hero assets
+# Regenerate from the current final-realism branch head.
 
 on:
   workflow_dispatch:
