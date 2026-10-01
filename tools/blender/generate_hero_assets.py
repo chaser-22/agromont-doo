@@ -426,10 +426,12 @@ def build_asset(name, builder):
     # into Blender Z-up before save/export so export_yup=True produces the same
     # X/Y/Z orientation expected by Three.js.
     authored_objects = [body] + ([glass_body] if glass_body else [])
+    bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
     for authored in authored_objects:
-        authored.rotation_euler.x = math.pi / 2
         select_only([authored])
         bpy.context.view_layer.objects.active = authored
+        bpy.ops.object.origin_set(type="ORIGIN_CURSOR", center="MEDIAN")
+        authored.rotation_euler.x = math.pi / 2
         bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
 
     bpy.ops.file.pack_all()
