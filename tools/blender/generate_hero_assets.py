@@ -11,7 +11,7 @@ TEX = os.path.join(ROOT, "textures")
 for p in (RAW, SRC, TEX):
     os.makedirs(p, exist_ok=True)
 
-bpy.context.scene.render.engine = "BLENDER_EEVEE_NEXT"
+bpy.context.scene.render.engine = "CYCLES"
 bpy.context.scene.render.image_settings.file_format = "PNG"
 bpy.context.scene.render.resolution_percentage = 100
 
@@ -324,7 +324,7 @@ def unwrap(obj):
 def bake_maps(asset, body, size=1024):
     unwrap(body)
     scene=bpy.context.scene
-    scene.render.engine="BLENDER_EEVEE_NEXT"
+    scene.render.engine="CYCLES"
     scene.render.bake.use_clear=True
     scene.render.bake.margin=8
 
