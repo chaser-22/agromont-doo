@@ -13,6 +13,7 @@ import {
 export type SupplySceneOptions = {
   mobile: boolean;
   lowPower: boolean;
+  quality?: "ultra" | "standard" | "mobile" | "low";
 };
 
 function clamp01(value: number) {
@@ -186,45 +187,51 @@ function createBollards(THREE: any, material: any, positions: Array<[number, num
 }
 
 function createSkyDome(THREE: any) {
-  const material = new THREE.ShaderMaterial({
+  // Vertex-colored sky works in both WebGLRenderer and WebGPURenderer.
+  // Keeping the sky material renderer-agnostic is what allows the Ultra path
+  // to use WebGPU without a ShaderMaterial compatibility fork.
+  const geometry = new THREE.SphereGeometry(70, 48, 24);
+  const position = geometry.getAttribute("position");
+  const colors = new Float32Array(position.count * 3);
+  const top = new THREE.Color(0x78909d);
+  const horizon = new THREE.Color(0xd8d1bd);
+  const ground = new THREE.Color(0x66675d);
+  const sample = new THREE.Color();
+
+  for (let i = 0; i < position.count; i++) {
+    const y = position.getY(i) / 70;
+    if (y >= 0) {
+      const t = Math.min(1, Math.max(0, (y - 0.02) / 0.70));
+      const eased = t * t * (3 - 2 * t);
+      sample.copy(horizon).lerp(top, eased);
+    } else {
+      const t = Math.min(1, Math.max(0, (y + 0.28) / 0.32));
+      const eased = t * t * (3 - 2 * t);
+      sample.copy(ground).lerp(horizon, eased);
+    }
+    colors[i * 3] = sample.r;
+    colors[i * 3 + 1] = sample.g;
+    colors[i * 3 + 2] = sample.b;
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
+  const material = new THREE.MeshBasicMaterial({
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x78909d) },
-      horizonColor: { value: new THREE.Color(0xd8d1bd) },
-      groundColor: { value: new THREE.Color(0x66675d) },
-    },
-    vertexShader: `
-      varying vec3 vWorld;
-      void main() {
-        vec4 world = modelMatrix * vec4(position, 1.0);
-        vWorld = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vWorld;
-      uniform vec3 topColor;
-      uniform vec3 horizonColor;
-      uniform vec3 groundColor;
-      void main() {
-        float h = normalize(vWorld).y;
-        vec3 upper = mix(horizonColor, topColor, smoothstep(0.02, 0.72, h));
-        vec3 finalColor = mix(groundColor, upper, smoothstep(-0.28, 0.04, h));
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `,
+    vertexColors: true,
+    fog: false,
   });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 16), material);
+  const dome = new THREE.Mesh(geometry, material);
   dome.position.y = 3;
   return dome;
 }
 
 export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const { mobile, lowPower } = options;
+  const ultra = options.quality === "ultra";
   const shadows = !mobile;
-  const detailOptions = { mobile, lowPower, shadows };
-  const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower);
+  const detailOptions = { mobile, lowPower, shadows, ultra };
+  const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower, ultra);
 
   const materials = {
     siloMetal: new THREE.MeshStandardMaterial({
@@ -248,15 +255,18 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       roughness: 0.64,
       metalness: 0.48,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 0.58,
+      envMapIntensity: ultra ? 0.82 : 0.58,
     }),
-    green: new THREE.MeshStandardMaterial({
+    green: new THREE.MeshPhysicalMaterial({
       color: 0x183f2c,
-      roughness: 0.64,
+      roughness: ultra ? 0.48 : 0.64,
       metalness: 0.08,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.paint,
-      bumpScale: 0.026,
+      bumpScale: ultra ? 0.032 : 0.026,
+      clearcoat: ultra ? 0.14 : 0.04,
+      clearcoatRoughness: 0.58,
+      envMapIntensity: ultra ? 0.72 : 0.55,
     }),
     greenCutaway: new THREE.MeshPhysicalMaterial({
       color: 0xd6d1c4,
@@ -268,14 +278,18 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
-      envMapIntensity: 0.48,
+      envMapIntensity: ultra ? 0.62 : 0.48,
+      clearcoat: ultra ? 0.08 : 0,
+      clearcoatRoughness: 0.7,
     }),
-    stainless: new THREE.MeshStandardMaterial({
+    stainless: new THREE.MeshPhysicalMaterial({
       color: 0xc2c6c4,
-      roughness: 0.34,
-      metalness: 0.74,
+      roughness: ultra ? 0.27 : 0.34,
+      metalness: 0.80,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 0.88,
+      envMapIntensity: ultra ? 1.02 : 0.88,
+      clearcoat: ultra ? 0.05 : 0,
+      clearcoatRoughness: 0.45,
     }),
     dustBlue: new THREE.MeshStandardMaterial({
       color: 0x195e91,
@@ -314,37 +328,46 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpMap: surfaceMaps.asphalt,
       bumpScale: 0.035,
     }),
-    offWhite: new THREE.MeshStandardMaterial({
+    offWhite: new THREE.MeshPhysicalMaterial({
       color: 0xe8e1d2,
-      roughness: 0.74,
+      roughness: ultra ? 0.58 : 0.74,
       metalness: 0.02,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.paint,
-      bumpScale: 0.012,
+      bumpScale: ultra ? 0.018 : 0.012,
+      clearcoat: ultra ? 0.09 : 0.02,
+      clearcoatRoughness: 0.72,
+      envMapIntensity: ultra ? 0.68 : 0.52,
     }),
-    hallPanel: new THREE.MeshStandardMaterial({
+    hallPanel: new THREE.MeshPhysicalMaterial({
       color: 0xcecdc3,
       roughness: 0.73,
       metalness: 0.045,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.corrugation,
-      bumpScale: 0.018,
+      bumpScale: ultra ? 0.024 : 0.018,
+      clearcoat: ultra ? 0.045 : 0,
+      clearcoatRoughness: 0.74,
     }),
-    roofMetal: new THREE.MeshStandardMaterial({
+    roofMetal: new THREE.MeshPhysicalMaterial({
       color: 0x858c87,
       roughness: 0.56,
       metalness: 0.46,
       roughnessMap: surfaceMaps.steelNoise,
       bumpMap: surfaceMaps.corrugation,
-      bumpScale: 0.025,
+      bumpScale: ultra ? 0.034 : 0.025,
+      clearcoat: ultra ? 0.04 : 0,
+      clearcoatRoughness: 0.62,
     }),
-    trailer: new THREE.MeshStandardMaterial({
+    trailer: new THREE.MeshPhysicalMaterial({
       color: 0xd5d3c9,
       roughness: 0.69,
       metalness: 0.10,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.corrugation,
-      bumpScale: 0.02,
+      bumpScale: ultra ? 0.028 : 0.02,
+      clearcoat: ultra ? 0.10 : 0.02,
+      clearcoatRoughness: 0.68,
     }),
     carton: new THREE.MeshStandardMaterial({
       color: 0x8b806d,
@@ -393,8 +416,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       metalness: 0,
       transparent: true,
       opacity: 0.52,
-      transmission: lowPower ? 0 : 0.12,
-      thickness: 0.12,
+      transmission: lowPower ? 0 : ultra ? 0.26 : 0.12,
+      thickness: ultra ? 0.18 : 0.12,
       ior: 1.45,
       envMapIntensity: 0.58,
     }),
@@ -870,7 +893,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   }
 
   if (!lowPower) {
-    for (let y = 1.5; y < 7.0; y += 1.15) {
+    for (let y = 1.5; y < 7.0; y += ultra ? 0.78 : 1.15) {
       const conduit = createPipe(THREE, materials.darkMetal, 2.0, 0.045, true);
       conduit.position.set(2.6, y, 3.36);
       feedMill.add(conduit);
@@ -992,7 +1015,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   // multiple visible tracks, stainless construction and clear service access.
   const grader = new THREE.Group();
   const graderLength = 8.65;
-  const graderRows = lowPower ? 2 : mobile ? 3 : 4;
+  const graderRows = lowPower ? 2 : mobile ? 3 : ultra ? 6 : 4;
   const rowSpacing = 0.31;
   const graderZ = 3.05;
   const frameRailGeo = new THREE.BoxGeometry(graderLength, 0.085, 0.085);
@@ -1031,7 +1054,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   grader.add(tracks);
 
   const carrierGeo = new THREE.CylinderGeometry(0.07, 0.07, 0.18, 10);
-  const carrierCount = lowPower ? 24 : mobile ? 42 : 68;
+  const carrierCount = lowPower ? 24 : mobile ? 42 : ultra ? 112 : 68;
   const carriers = new THREE.InstancedMesh(carrierGeo, materials.stainless, carrierCount);
   for (let i = 0; i < carrierCount; i++) {
     const row = i % graderRows;
@@ -1051,7 +1074,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
 
   const eggs: any[] = [];
   const eggGeometry = makeEggGeometry(THREE);
-  const eggCount = lowPower ? 6 : mobile ? 10 : 16;
+  const eggCount = lowPower ? 6 : mobile ? 10 : ultra ? 24 : 16;
   for (let i = 0; i < eggCount; i++) {
     const egg = addShadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
     egg.scale.setScalar(0.265);
