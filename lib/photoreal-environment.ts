@@ -1,6 +1,7 @@
 type SurfaceInstallOptions = {
   mobile: boolean;
   lowPower: boolean;
+  qaMode?: boolean;
 };
 
 function configureTexture(THREE: any, texture: any, repeatX: number, repeatY: number, srgb = false) {
@@ -110,6 +111,10 @@ export async function installPhotorealEnvironment(
   }
 
   let environmentTarget: any = null;
+  if (options.qaMode) {
+    return { loaded, failed, environmentTarget };
+  }
+
   try {
     const { RGBELoader } = await import("three/addons/loaders/RGBELoader.js");
     const hdr = await new RGBELoader().loadAsync("/assets/photoreal/industrial-overcast.hdr");
