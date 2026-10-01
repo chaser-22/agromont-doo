@@ -191,36 +191,35 @@ function createBollards(THREE: any, material: any, positions: Array<[number, num
 }
 
 function createSkyDome(THREE: any) {
-  const material = new THREE.ShaderMaterial({
+  const geometry = new THREE.SphereGeometry(70, 32, 16);
+  const positions = geometry.getAttribute("position");
+  const colors = new Float32Array(positions.count * 3);
+  const top = new THREE.Color(0x78909d);
+  const horizon = new THREE.Color(0xd8d1bd);
+  const ground = new THREE.Color(0x66675d);
+  const color = new THREE.Color();
+
+  for (let i = 0; i < positions.count; i++) {
+    const y = positions.getY(i) / 70;
+    if (y >= 0) {
+      const t = Math.min(1, Math.max(0, (y - 0.02) / 0.70));
+      color.copy(horizon).lerp(top, t * t * (3 - 2 * t));
+    } else {
+      const t = Math.min(1, Math.max(0, (y + 0.28) / 0.32));
+      color.copy(ground).lerp(horizon, t * t * (3 - 2 * t));
+    }
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const material = new THREE.MeshBasicMaterial({
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x78909d) },
-      horizonColor: { value: new THREE.Color(0xd8d1bd) },
-      groundColor: { value: new THREE.Color(0x66675d) },
-    },
-    vertexShader: `
-      varying vec3 vWorld;
-      void main() {
-        vec4 world = modelMatrix * vec4(position, 1.0);
-        vWorld = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vWorld;
-      uniform vec3 topColor;
-      uniform vec3 horizonColor;
-      uniform vec3 groundColor;
-      void main() {
-        float h = normalize(vWorld).y;
-        vec3 upper = mix(horizonColor, topColor, smoothstep(0.02, 0.72, h));
-        vec3 finalColor = mix(groundColor, upper, smoothstep(-0.28, 0.04, h));
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `,
+    vertexColors: true,
   });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 16), material);
+  const dome = new THREE.Mesh(geometry, material);
   dome.position.y = 3;
   return dome;
 }
@@ -1196,9 +1195,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     logistics.add(post);
   }
 
-  const truck = useUltraAssets
-    ? createUltraRigidTruck(THREE, materials, detailOptions)
-    : createDetailedTruck(THREE, materials, detailOptions);
+  const truck = createDetailedTruck(THREE, materials, detailOptions);
   truck.position.set(0.45, 0, 0.1);
   truck.rotation.y = Math.PI;
   logistics.add(truck);
