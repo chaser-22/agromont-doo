@@ -84,7 +84,6 @@ jobs:
               --slots "{normalTexture,occlusionTexture,metallicRoughnessTexture}" \
               --level 2 --zstd 10
             gltf-transform etc1s "$t3" "$out" \
-              --slots "{baseColorTexture}" \
               --quality 220
             gltf-transform inspect "$out" > ".hero-build/reports/${base}.txt"
           done
