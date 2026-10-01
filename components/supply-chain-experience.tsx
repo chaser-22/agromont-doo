@@ -103,7 +103,15 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const mobile = window.matchMedia("(max-width: 900px)").matches;
-      const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
+      const hardwareConcurrency = navigator.hardwareConcurrency ?? 8;
+      const lowPower = mobile && (hardwareConcurrency <= 4 || window.innerWidth <= 430);
+      const assetQuality = qaMode
+        ? (mobile ? "fallback" : "high")
+        : mobile
+          ? "fallback"
+          : hardwareConcurrency <= 6
+            ? "medium"
+            : "high";
       const canAttemptWebGPU = !qaMode && !mobile && !reducedMotion && "gpu" in navigator;
 
       let contextLost = false;
@@ -226,7 +234,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "centripetal");
       const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "centripetal");
 
-      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
+      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, assetQuality });
       scene.add(supplyScene.world);
 
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
@@ -477,6 +485,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               stageCode: stages[resolveStage(progress)].code,
               mobile,
               lowPower,
+              assetQuality,
               reducedMotion,
               viewport: { width: viewportWidth, height: viewportHeight },
               dpr: currentDpr,
