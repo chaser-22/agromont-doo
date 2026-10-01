@@ -1,5 +1,5 @@
 {
-  "generatedFrom": "4d45775bf2527c629ed47d1289f5c3022004193a",
+  "generatedFrom": "d012b024714dab80e6bc03809f396936ecf814a7",
   "blender": "5.2.2 LTS",
   "compression": [
     "EXT_meshopt_compression",
@@ -18,7 +18,7 @@
     },
     {
       "file": "grader-lod2.glb",
-      "bytes": 1033492,
+      "bytes": 1033452,
       "url": "/assets/hero/grader-lod2.glb"
     },
     {
@@ -38,17 +38,17 @@
     },
     {
       "file": "truck-lod0.glb",
-      "bytes": 1302024,
+      "bytes": 1999576,
       "url": "/assets/hero/truck-lod0.glb"
     },
     {
       "file": "truck-lod1.glb",
-      "bytes": 1080164,
+      "bytes": 1484500,
       "url": "/assets/hero/truck-lod1.glb"
     },
     {
       "file": "truck-lod2.glb",
-      "bytes": 902716,
+      "bytes": 1114776,
       "url": "/assets/hero/truck-lod2.glb"
     }
   ]
