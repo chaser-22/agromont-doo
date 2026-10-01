@@ -271,6 +271,105 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, ultra: ultraRenderer });
       scene.add(supplyScene.world);
 
+      let loadedHeroAssets = 0;
+      root.dataset.heroAssets = "procedural";
+
+      if (!mobile) {
+        try {
+          const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+          const loader = new GLTFLoader();
+
+          const tuneImportedMaterial = (material: any) => {
+            if (!material) return material;
+            const tuned = material.clone?.() ?? material;
+            const name = String(tuned.name || "").toLowerCase();
+
+            tuned.envMapIntensity = ultraRenderer ? 0.95 : 0.76;
+            if (tuned.map) tuned.map.anisotropy = ultraRenderer ? 12 : 6;
+            if (tuned.normalMap) tuned.normalMap.anisotropy = ultraRenderer ? 12 : 6;
+            if (tuned.roughnessMap) tuned.roughnessMap.anisotropy = ultraRenderer ? 12 : 6;
+
+            if (/glass|glaz|window/.test(name)) {
+              tuned.roughness = Math.min(tuned.roughness ?? 0.2, 0.15);
+              tuned.metalness = 0;
+              tuned.transparent = true;
+              tuned.opacity = Math.min(tuned.opacity ?? 1, 0.72);
+              tuned.depthWrite = false;
+            } else if (/rubber|tyre|tire/.test(name)) {
+              tuned.roughness = 0.9;
+              tuned.metalness = 0;
+            } else if (/alloy|steel|metal|chrome|galv/.test(name)) {
+              tuned.roughness = Math.min(tuned.roughness ?? 0.45, 0.46);
+              tuned.metalness = Math.max(tuned.metalness ?? 0.5, 0.62);
+            } else {
+              tuned.roughness = Math.max(0.34, Math.min(tuned.roughness ?? 0.62, 0.72));
+            }
+            tuned.needsUpdate = true;
+            return tuned;
+          };
+
+          const installHero = async (
+            localUrl: string,
+            remoteUrl: string,
+            slot: { anchor: any; fallbackObjects: any[] },
+            options: { preRotateY?: number; scale?: number } = {},
+          ) => {
+            let gltf: any;
+            try {
+              gltf = await loader.loadAsync(localUrl);
+            } catch {
+              gltf = await loader.loadAsync(remoteUrl);
+            }
+
+            const model = gltf.scene;
+            const parent = slot.anchor.parent;
+            if (!parent) return;
+
+            model.position.copy(slot.anchor.position);
+            model.quaternion.copy(slot.anchor.quaternion);
+            if (options.preRotateY) model.rotateY(options.preRotateY);
+            model.scale.copy(slot.anchor.scale);
+            if (options.scale) model.scale.multiplyScalar(options.scale);
+            model.name = `UltraHero:${localUrl.split("/").pop() ?? "asset"}`;
+
+            model.traverse((object: any) => {
+              if (!object.isMesh) return;
+              object.castShadow = !mobile;
+              object.receiveShadow = !mobile;
+              if (Array.isArray(object.material)) {
+                object.material = object.material.map(tuneImportedMaterial);
+              } else {
+                object.material = tuneImportedMaterial(object.material);
+              }
+            });
+
+            parent.add(model);
+            slot.fallbackObjects.forEach((object: any) => {
+              object.visible = false;
+            });
+            loadedHeroAssets += 1;
+            root.dataset.heroAssets = String(loadedHeroAssets);
+          };
+
+          await Promise.allSettled([
+            installHero(
+              "/models/luton-box-cc0.glb",
+              "https://cdn.3dassets.dev/assets/32539/v1/model.glb",
+              supplyScene.heroSlots.truck,
+              { preRotateY: -Math.PI / 2, scale: 1.03 },
+            ),
+            installHero(
+              "/models/grader-scanner-cc0.glb",
+              "https://cdn.3dassets.dev/assets/34789/v1/model.glb",
+              supplyScene.heroSlots.scanner,
+              { preRotateY: Math.PI / 2, scale: 0.72 },
+            ),
+          ]);
+        } catch {
+          // Authored hero assets are enhancements; procedural assets remain visible.
+        }
+      }
+
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
       scene.add(hemi);
 
@@ -523,6 +622,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               },
               gpu: gpuInfo,
               qualityTier: ultraRenderer ? "ultra-webgpu" : lowPower ? "low-power" : mobile ? "mobile" : "standard-webgl",
+              heroAssets: loadedHeroAssets,
               timestamp: performance.now(),
             };
           },
