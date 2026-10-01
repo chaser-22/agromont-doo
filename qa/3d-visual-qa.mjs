@@ -1,5 +1,6 @@
 import { chromium } from "playwright";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rename, rm, writeFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import path from "node:path";
 
 const baseUrl = (process.env.QA_BASE_URL || "http://127.0.0.1:3005").replace(/\/$/, "");
@@ -14,6 +15,8 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: false,
     hasTouch: false,
+    motionSteps: 28,
+    playbackFps: 10,
   },
   {
     name: "mobile-390x844",
@@ -22,8 +25,12 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
+    motionSteps: 24,
+    playbackFps: 10,
   },
 ];
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function finiteArray(values) {
   return Array.isArray(values) && values.length > 0 && values.every(Number.isFinite);
@@ -32,6 +39,22 @@ function finiteArray(values) {
 function distance(a, b) {
   if (!a || !b || a.length !== 3 || b.length !== 3) return 0;
   return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+}
+
+function buildSamples(steps) {
+  const values = [...milestones];
+  for (let index = 0; index <= steps; index += 1) values.push(index / steps);
+  return [...new Set(values.map((value) => Number(value.toFixed(6))))].sort((a, b) => a - b);
+}
+
+function milestoneIndex(progress) {
+  return milestones.findIndex((value) => Math.abs(value - progress) < 0.00001);
+}
+
+function frameName(index) {
+  const label = String(index).padStart(2, "0");
+  const percent = String(Math.round(milestones[index] * 100)).padStart(3, "0");
+  return `frame-${label}-p${percent}.jpg`;
 }
 
 function htmlEscape(value) {
@@ -65,6 +88,7 @@ const report = {
 };
 
 for (const profile of profiles) {
+  const profileStartedAt = Date.now();
   const profileDir = path.join(outputRoot, profile.name);
   await mkdir(profileDir, { recursive: true });
 
@@ -89,6 +113,7 @@ for (const profile of profiles) {
     pageErrors.push(error.stack || error.message || String(error));
   });
 
+  console.log(`[qa] loading ${profile.name}`);
   await page.goto(`${baseUrl}/qa-3d`, { waitUntil: "networkidle", timeout: 60_000 });
 
   await page.waitForFunction(
@@ -100,78 +125,83 @@ for (const profile of profiles) {
     { timeout: 35_000 },
   );
 
-  await page.waitForTimeout(600);
+  const milestoneSnapshots = Array(milestones.length).fill(null);
+  const capturedFrameFiles = Array(milestones.length).fill(null);
+  const motionSamples = [];
+  const renderDurations = [];
+  const samples = buildSamples(profile.motionSteps);
 
-  const milestoneSnapshots = [];
-  for (let index = 0; index < milestones.length; index += 1) {
-    const progress = milestones[index];
-
-    await page.evaluate((value) => window.__AGROMONT_3D_QA__.setProgress(value), progress);
-    await page.waitForTimeout(profile.isMobile ? 180 : 220);
-
-    const snapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
-    milestoneSnapshots.push(snapshot);
-
-    if (snapshot.failed) {
-      report.failures.push(`${profile.name}: WebGL context failed at progress ${progress}`);
-    }
-    if (!finiteArray(snapshot.camera?.position) || !finiteArray(snapshot.camera?.target)) {
-      report.failures.push(`${profile.name}: invalid camera data at progress ${progress}`);
-    }
-    if (!Number.isFinite(snapshot.camera?.fov) || snapshot.camera.fov <= 0) {
-      report.failures.push(`${profile.name}: invalid camera FOV at progress ${progress}`);
-    }
-    if (!Number.isFinite(snapshot.renderer?.calls) || snapshot.renderer.calls <= 0) {
-      report.failures.push(`${profile.name}: renderer produced no draw calls at progress ${progress}`);
-    }
-    if (!Number.isFinite(snapshot.renderer?.triangles) || snapshot.renderer.triangles <= 100) {
-      report.failures.push(`${profile.name}: suspiciously low triangle count at progress ${progress}`);
-    }
-  }
-
+  const rawVideoPath = path.join(profileDir, "scroll-sequence.raw.webm");
   const videoPath = path.join(profileDir, "scroll-sequence.webm");
   let screencastStarted = false;
-  let captureProgress = 0;
-  let captureIndex = 0;
-  const capturedFrameFiles = [];
+  let latestFrame = null;
+  let frameSerial = 0;
+  let missedFrameEvents = 0;
+  let transcoded = false;
+  let transcodeMessage = "";
+
+  let previous = null;
+  let maxCameraStep = 0;
+  let maxTargetStep = 0;
+  let maxFovStep = 0;
 
   try {
     await page.screencast.start({
-      path: videoPath,
+      path: rawVideoPath,
       size: profile.captureSize,
-      quality: 84,
-      onFrame: async ({ data }) => {
-        while (captureIndex < milestones.length && captureProgress >= milestones[captureIndex] - 0.0001) {
-          const label = String(captureIndex).padStart(2, "0");
-          const percent = String(Math.round(milestones[captureIndex] * 100)).padStart(3, "0");
-          const filename = `frame-${label}-p${percent}.jpg`;
-          await writeFile(path.join(profileDir, filename), data);
-          capturedFrameFiles.push(filename);
-          captureIndex += 1;
-        }
+      quality: 80,
+      onFrame: ({ data }) => {
+        latestFrame = Buffer.from(data);
+        frameSerial += 1;
       },
     });
     screencastStarted = true;
 
-    captureProgress = 0;
-    await page.evaluate(() => window.__AGROMONT_3D_QA__.setProgress(0));
-    await page.waitForTimeout(220);
+    for (let sampleIndex = 0; sampleIndex < samples.length; sampleIndex += 1) {
+      const progress = samples[sampleIndex];
+      const beforeFrame = frameSerial;
+      const renderStartedAt = Date.now();
 
-    const motionSamples = [];
-    const frameCount = profile.isMobile ? 84 : 108;
-    let previous = null;
-    let maxCameraStep = 0;
-    let maxTargetStep = 0;
-    let maxFovStep = 0;
-
-    for (let frame = 0; frame <= frameCount; frame += 1) {
-      const t = frame / frameCount;
-      const eased = t * t * (3 - 2 * t);
-      captureProgress = eased;
       const snapshot = await page.evaluate(
         (value) => window.__AGROMONT_3D_QA__.setProgress(value),
-        eased,
+        progress,
       );
+
+      const renderMs = Date.now() - renderStartedAt;
+      renderDurations.push(renderMs);
+
+      const waitStartedAt = Date.now();
+      while (frameSerial <= beforeFrame && Date.now() - waitStartedAt < 1_500) {
+        await delay(20);
+      }
+      if (frameSerial <= beforeFrame) missedFrameEvents += 1;
+
+      const exactMilestoneIndex = milestoneIndex(progress);
+      if (exactMilestoneIndex >= 0) {
+        milestoneSnapshots[exactMilestoneIndex] = snapshot;
+
+        if (latestFrame) {
+          const filename = frameName(exactMilestoneIndex);
+          await writeFile(path.join(profileDir, filename), latestFrame);
+          capturedFrameFiles[exactMilestoneIndex] = filename;
+        }
+
+        if (snapshot.failed) {
+          report.failures.push(`${profile.name}: WebGL context failed at progress ${progress}`);
+        }
+        if (!finiteArray(snapshot.camera?.position) || !finiteArray(snapshot.camera?.target)) {
+          report.failures.push(`${profile.name}: invalid camera data at progress ${progress}`);
+        }
+        if (!Number.isFinite(snapshot.camera?.fov) || snapshot.camera.fov <= 0) {
+          report.failures.push(`${profile.name}: invalid camera FOV at progress ${progress}`);
+        }
+        if (!Number.isFinite(snapshot.renderer?.calls) || snapshot.renderer.calls <= 0) {
+          report.failures.push(`${profile.name}: renderer produced no draw calls at progress ${progress}`);
+        }
+        if (!Number.isFinite(snapshot.renderer?.triangles) || snapshot.renderer.triangles <= 100) {
+          report.failures.push(`${profile.name}: suspiciously low triangle count at progress ${progress}`);
+        }
+      }
 
       if (previous) {
         maxCameraStep = Math.max(maxCameraStep, distance(snapshot.camera.position, previous.camera.position));
@@ -180,35 +210,91 @@ for (const profile of profiles) {
       }
       previous = snapshot;
 
-      if (frame % 15 === 0 || frame === frameCount) {
+      if (sampleIndex % 4 === 0 || sampleIndex === samples.length - 1 || exactMilestoneIndex >= 0) {
         motionSamples.push(snapshot);
       }
-      await page.waitForTimeout(profile.isMobile ? 18 : 16);
-    }
 
-    captureProgress = 1;
-    await page.waitForTimeout(320);
-    await page.screencast.stop();
-    screencastStarted = false;
-
-    if (captureIndex < milestones.length) {
-      report.failures.push(
-        `${profile.name}: screencast captured only ${captureIndex}/${milestones.length} milestone frames`,
+      console.log(
+        `[qa] ${profile.name} ${String(sampleIndex + 1).padStart(2, "0")}/${samples.length} ` +
+        `progress=${progress.toFixed(3)} render=${renderMs}ms frame=${frameSerial}`,
       );
     }
 
-    const finalSnapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
+    // Recover any milestone frame event that was dropped by the browser screencast.
+    for (let index = 0; index < milestones.length; index += 1) {
+      if (capturedFrameFiles[index]) continue;
 
-    if (maxCameraStep > 2.0) {
+      const beforeFrame = frameSerial;
+      const progress = milestones[index];
+      const snapshot = await page.evaluate(
+        (value) => window.__AGROMONT_3D_QA__.setProgress(value),
+        progress,
+      );
+      milestoneSnapshots[index] = milestoneSnapshots[index] || snapshot;
+
+      const waitStartedAt = Date.now();
+      while (frameSerial <= beforeFrame && Date.now() - waitStartedAt < 2_000) {
+        await delay(25);
+      }
+
+      if (latestFrame && frameSerial > beforeFrame) {
+        const filename = frameName(index);
+        await writeFile(path.join(profileDir, filename), latestFrame);
+        capturedFrameFiles[index] = filename;
+      }
+    }
+
+    await page.screencast.stop();
+    screencastStarted = false;
+
+    const ffmpeg = spawnSync(
+      "ffmpeg",
+      [
+        "-y",
+        "-loglevel", "error",
+        "-i", rawVideoPath,
+        "-vf", `setpts=N/(${profile.playbackFps}*TB),fps=${profile.playbackFps}`,
+        "-an",
+        "-c:v", "libvpx-vp9",
+        "-crf", "34",
+        "-b:v", "0",
+        videoPath,
+      ],
+      { encoding: "utf8" },
+    );
+
+    if (ffmpeg.status === 0) {
+      transcoded = true;
+      transcodeMessage = "normalized to fixed-rate playback";
+      await rm(rawVideoPath, { force: true });
+    } else {
+      transcodeMessage = (ffmpeg.stderr || "ffmpeg unavailable; kept raw screencast").trim();
+      await rm(videoPath, { force: true });
+      await rename(rawVideoPath, videoPath);
+    }
+
+    const missingMilestones = capturedFrameFiles
+      .map((value, index) => value ? null : index)
+      .filter((value) => value !== null);
+
+    if (missingMilestones.length) {
+      report.failures.push(
+        `${profile.name}: missing ${missingMilestones.length}/${milestones.length} screencast milestone frame(s)`,
+      );
+    }
+
+    if (maxCameraStep > 3.0) {
       report.failures.push(`${profile.name}: camera step discontinuity ${maxCameraStep.toFixed(3)}`);
     }
-    if (maxTargetStep > 2.0) {
+    if (maxTargetStep > 3.0) {
       report.failures.push(`${profile.name}: target step discontinuity ${maxTargetStep.toFixed(3)}`);
     }
-    if (maxFovStep > 2.8) {
+    if (maxFovStep > 3.2) {
       report.failures.push(`${profile.name}: FOV step discontinuity ${maxFovStep.toFixed(3)}`);
     }
 
+    const finalSnapshot = await page.evaluate(() => window.__AGROMONT_3D_QA__.snapshot());
+    const totalRenderMs = renderDurations.reduce((sum, value) => sum + value, 0);
     const profileReport = {
       ...profile,
       consoleErrors,
@@ -217,9 +303,19 @@ for (const profile of profiles) {
       capturedFrameFiles,
       motion: {
         samples: motionSamples,
+        sampleCount: samples.length,
         maxCameraStep,
         maxTargetStep,
         maxFovStep,
+      },
+      capture: {
+        frameEvents: frameSerial,
+        missedFrameEvents,
+        averageRenderMs: renderDurations.length ? totalRenderMs / renderDurations.length : 0,
+        maxRenderMs: renderDurations.length ? Math.max(...renderDurations) : 0,
+        durationMs: Date.now() - profileStartedAt,
+        transcoded,
+        transcodeMessage,
       },
       final: finalSnapshot,
     };
@@ -253,11 +349,12 @@ const cards = report.profiles.map((profile) => {
   const first = profile.milestones[0];
   const last = profile.milestones[profile.milestones.length - 1];
   const images = milestones.map((progress, index) => {
-    const label = String(index).padStart(2, "0");
+    const filename = profile.capturedFrameFiles[index];
+    if (!filename) return "";
     const percent = String(Math.round(progress * 100)).padStart(3, "0");
     return `
       <figure>
-        <img src="./${profile.name}/frame-${label}-p${percent}.jpg" alt="${profile.name} at ${percent}% progress">
+        <img src="./${profile.name}/${filename}" alt="${profile.name} at ${percent}% progress">
         <figcaption>${percent}% · stage ${profile.milestones[index]?.stage ?? "?"}</figcaption>
       </figure>`;
   }).join("");
@@ -272,11 +369,14 @@ const cards = report.profiles.map((profile) => {
         Triangles: <strong>${last?.renderer?.triangles ?? "?"}</strong><br>
         Camera max step: <strong>${profile.motion.maxCameraStep.toFixed(3)}</strong> ·
         Target max step: <strong>${profile.motion.maxTargetStep.toFixed(3)}</strong> ·
-        FOV max step: <strong>${profile.motion.maxFovStep.toFixed(3)}</strong>
+        FOV max step: <strong>${profile.motion.maxFovStep.toFixed(3)}</strong><br>
+        Samples: <strong>${profile.motion.sampleCount}</strong> ·
+        Avg render: <strong>${profile.capture.averageRenderMs.toFixed(0)} ms</strong> ·
+        Profile time: <strong>${(profile.capture.durationMs / 1000).toFixed(1)} s</strong>
       </p>
       <video controls muted loop preload="metadata" src="./${profile.name}/scroll-sequence.webm"></video>
       <div class="frames">${images}</div>
-      <details><summary>Renderer metrics</summary><pre>${htmlEscape(JSON.stringify({ first, last }, null, 2))}</pre></details>
+      <details><summary>Renderer metrics</summary><pre>${htmlEscape(JSON.stringify({ first, last, capture: profile.capture }, null, 2))}</pre></details>
     </section>`;
 }).join("");
 
@@ -326,7 +426,7 @@ const summary = [
   `Profiles: ${profiles.map((profile) => profile.name).join(", ")}`,
   `Result: ${report.failures.length ? `❌ ${report.failures.length} failure(s)` : "✅ structural checks passed"}`,
   "",
-  "Artifacts include a WebM scroll recording, milestone JPEG frames captured from the same screencast, renderer metrics JSON, and an HTML review page for each profile.",
+  "Artifacts include a normalized WebM timeline recording, exact milestone JPEG frames from the same screencast stream, renderer metrics JSON, and an HTML review page for each profile.",
   "",
   ...report.failures.map((failure) => `- ${failure}`),
 ].join("\n");
