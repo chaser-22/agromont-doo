@@ -15,7 +15,8 @@
     "start:vercel": "next start -p 3005",
     "test": "npm run build:sites && npm run build:vercel && node --test tests/*.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "assets:runtime": "node scripts/copy-three-basis.mjs"
+    "assets:runtime": "node scripts/copy-three-basis.mjs",
+    "generate:hero-assets": "node scripts/generate-hero-assets.mjs"
   },
   "dependencies": {
     "next": "16.3.0",
