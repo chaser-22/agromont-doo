@@ -14,6 +14,7 @@ import {
   createUltraProcessSkid,
   createUltraRigidTruck,
 } from "@/lib/ultra-hero-assets";
+import type { AuthoredHeroSlots } from "@/lib/blender-hero-loader";
 
 export type SupplySceneOptions = {
   mobile: boolean;
@@ -428,6 +429,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
 
   const world = new THREE.Group();
   world.name = "AgromontSupplySystemRealistic";
+  const authoredHeroSlots: AuthoredHeroSlots = {};
 
   const sky = createSkyDome(THREE);
   world.add(sky);
@@ -889,9 +891,17 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       vessel.visible = false;
     });
 
+    const processSkidMount = new THREE.Group();
+    processSkidMount.name = "ProcessSkidHeroMount";
+    processSkidMount.position.set(0.05, 0, 0.15);
+    feedMill.add(processSkidMount);
+
     const ultraProcessSkid = createUltraProcessSkid(THREE, materials, detailOptions);
-    ultraProcessSkid.position.set(0.05, 0, 0.15);
-    feedMill.add(ultraProcessSkid);
+    processSkidMount.add(ultraProcessSkid);
+    authoredHeroSlots.processSkid = {
+      mount: processSkidMount,
+      fallback: ultraProcessSkid,
+    };
   }
 
   const pelletGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8);
@@ -1160,9 +1170,17 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     statusLamp.visible = false;
     packerWindow.visible = false;
 
+    const graderMount = new THREE.Group();
+    graderMount.name = "EggGraderHeroMount";
+    graderMount.position.set(-0.05, 0, 3.05);
+    sorting.add(graderMount);
+
     const ultraGrader = createUltraEggGrader(THREE, materials, detailOptions);
-    ultraGrader.position.set(-0.05, 0, 3.05);
-    sorting.add(ultraGrader);
+    graderMount.add(ultraGrader);
+    authoredHeroSlots.grader = {
+      mount: graderMount,
+      fallback: ultraGrader,
+    };
     animatedEggs = ultraGrader.userData.eggs ?? eggs;
   }
 
@@ -1195,10 +1213,20 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     logistics.add(post);
   }
 
+  const truckMount = new THREE.Group();
+  truckMount.name = "TruckHeroMount";
+  truckMount.position.set(0.45, 0, 0.1);
+  truckMount.rotation.y = Math.PI;
+  logistics.add(truckMount);
+
   const truck = createDetailedTruck(THREE, materials, detailOptions);
-  truck.position.set(0.45, 0, 0.1);
-  truck.rotation.y = Math.PI;
-  logistics.add(truck);
+  truckMount.add(truck);
+  if (useUltraAssets) {
+    authoredHeroSlots.truck = {
+      mount: truckMount,
+      fallback: truck,
+    };
+  }
 
   const truckSignTexture = createSignTexture(THREE, ["AGROMONT", "DISTRIBUCIJA"], {
     accent: "#e89a28",
@@ -1345,6 +1373,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   return {
     world,
     materials,
+    authoredHeroSlots,
     update,
     dispose,
   };
