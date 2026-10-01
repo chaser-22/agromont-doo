@@ -41,6 +41,9 @@ jobs:
           /tmp/blender-5.2.2-linux-x64/blender \
             --background \
             --python tools/blender/generate_hero_assets.py
+          test -f .hero-build/raw/truck-lod0.glb
+          test -f .hero-build/raw/grader-lod0.glb
+          test -f .hero-build/raw/process-skid-lod0.glb
 
       - name: Install glTF optimization toolchain
         run: npm install --global @gltf-transform/cli@latest
@@ -49,16 +52,20 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p public/assets/hero .hero-build/reports
-          for source in .hero-build/raw/*.glb; do
+          shopt -s nullglob
+          sources=(.hero-build/raw/*.glb)
+          test "${#sources[@]}" -eq 9
+          for source in "${sources[@]}"; do
             base="$(basename "$source" .glb)"
             t1="/tmp/${base}-dedup.glb"
+            t1p="/tmp/${base}-pruned.glb"
             t2="/tmp/${base}-meshopt.glb"
             t3="/tmp/${base}-uastc.glb"
             out="public/assets/hero/${base}.glb"
 
             gltf-transform dedup "$source" "$t1"
-            gltf-transform prune "$t1" "$t1"
-            gltf-transform meshopt "$t1" "$t2" --level medium
+            gltf-transform prune "$t1" "$t1p"
+            gltf-transform meshopt "$t1p" "$t2" --level medium
             gltf-transform uastc "$t2" "$t3" \
               --slots "{normalTexture,occlusionTexture,metallicRoughnessTexture}" \
               --level 4 --rdo --rdo-lambda 4 --zstd 18
