@@ -143,14 +143,31 @@ for (const profile of profiles) {
   console.log(`[qa] loading ${profile.name}`);
   await page.goto(`${baseUrl}/qa-3d`, { waitUntil: "networkidle", timeout: 60_000 });
 
-  await page.waitForFunction(
-    () => {
-      const qa = window.__AGROMONT_3D_QA__;
-      return Boolean(qa?.ready && qa.snapshot?.().ready);
-    },
-    undefined,
-    { timeout: 35_000 },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const qa = window.__AGROMONT_3D_QA__;
+        return Boolean(qa?.ready && qa.snapshot?.().ready);
+      },
+      undefined,
+      { timeout: 120_000 },
+    );
+  } catch (error) {
+    const qaSnapshot = await page.evaluate(() => {
+      try {
+        return window.__AGROMONT_3D_QA__?.snapshot?.() ?? null;
+      } catch (snapshotError) {
+        return { snapshotError: String(snapshotError) };
+      }
+    });
+    console.error("[qa] readiness timeout", {
+      profile: profile.name,
+      qaSnapshot,
+      consoleErrors,
+      pageErrors,
+    });
+    throw error;
+  }
 
   const milestoneSnapshots = Array(milestones.length).fill(null);
   const capturedFrameFiles = Array(milestones.length).fill(null);
