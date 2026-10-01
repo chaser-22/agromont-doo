@@ -283,6 +283,66 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, quality: quality.tier });
       scene.add(supplyScene.world);
 
+      const heroAnimations: Array<(elapsed: number) => void> = [];
+      let loadedHeroAssets = 0;
+      root.dataset.heroAssets = "procedural";
+
+      if (!mobile) {
+        try {
+          const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+          const loader = new GLTFLoader();
+
+          const installHero = async (
+            url: string,
+            slot: { anchor: any; fallbackObjects: any[] },
+            animate?: (root: any) => ((elapsed: number) => void) | undefined,
+          ) => {
+            const gltf = await loader.loadAsync(url);
+            const model = gltf.scene;
+            const parent = slot.anchor.parent;
+            if (!parent) return;
+
+            model.position.copy(slot.anchor.position);
+            model.quaternion.copy(slot.anchor.quaternion);
+            model.scale.copy(slot.anchor.scale);
+            model.name = `UltraHero:${url.split("/").pop() ?? "asset"}`;
+            model.traverse((object: any) => {
+              if (object.isMesh) {
+                object.castShadow = quality.shadowMapSize > 0;
+                object.receiveShadow = quality.shadowMapSize > 0;
+              }
+            });
+
+            parent.add(model);
+            slot.fallbackObjects.forEach((object: any) => {
+              object.visible = false;
+            });
+
+            const animation = animate?.(model);
+            if (animation) heroAnimations.push(animation);
+            loadedHeroAssets += 1;
+            root.dataset.heroAssets = String(loadedHeroAssets);
+          };
+
+          await Promise.allSettled([
+            installHero("/models/truck-ultra.glb", supplyScene.heroSlots.truck),
+            installHero("/models/egg-grader-ultra.glb", supplyScene.heroSlots.grader, (model) => {
+              const eggMesh = model.getObjectByName("egg");
+              if (!eggMesh) return undefined;
+              const baseX = eggMesh.position.x;
+              const baseY = eggMesh.position.y;
+              return (elapsed: number) => {
+                eggMesh.position.x = baseX + Math.sin(elapsed * 0.72) * 0.075;
+                eggMesh.position.y = baseY + Math.sin(elapsed * 1.45) * 0.008;
+              };
+            }),
+          ]);
+        } catch {
+          // Desktop hero assets are an enhancement. The procedural versions
+          // remain visible if the loader or an individual GLB is unavailable.
+        }
+      }
+
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : quality.ultra ? 0.84 : 0.98);
       scene.add(hemi);
 
@@ -403,6 +463,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         if (scene.fog) scene.fog.density = (mobile ? 0.0118 : quality.ultra ? 0.0076 : 0.0088) + cameraProgress * 0.0004;
 
         supplyScene.update(elapsed, cameraProgress);
+        heroAnimations.forEach((animate) => animate(elapsed));
         renderer.render(scene, camera);
 
         if (!markedReady) {
@@ -491,6 +552,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               reducedMotion,
               quality: quality.tier,
               backend: rendererBackend,
+              heroAssets: loadedHeroAssets,
               viewport: { width: viewportWidth, height: viewportHeight },
               dpr: currentDpr,
               fps: latestFps,
