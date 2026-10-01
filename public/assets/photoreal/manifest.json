@@ -1,11 +1,12 @@
 {
-  "generatedAt": "2026-10-01T22:24:25.565Z",
+  "generatedAt": "2026-10-01T22:25:13.980Z",
   "source": "Poly Haven",
   "sourceUrl": "https://polyhaven.com",
   "license": "CC0",
   "assets": {
     "asphalt": "https://polyhaven.com/a/asphalt_floor",
     "concrete": "https://polyhaven.com/a/concrete_floor_01",
+    "corrugated": "https://polyhaven.com/a/corrugated_iron_02",
     "hdri": "https://polyhaven.com/a/hanger_exterior_cloudy"
   },
   "files": [
@@ -38,6 +39,21 @@
       "filename": "concrete-roughness.jpg",
       "bytes": 354529,
       "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_rough_1k.jpg"
+    },
+    {
+      "filename": "corrugated-basecolor.jpg",
+      "bytes": 568492,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron_02/corrugated_iron_02_diff_1k.jpg"
+    },
+    {
+      "filename": "corrugated-normal.jpg",
+      "bytes": 489773,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron_02/corrugated_iron_02_nor_gl_1k.jpg"
+    },
+    {
+      "filename": "corrugated-roughness.jpg",
+      "bytes": 793854,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/corrugated_iron_02/corrugated_iron_02_rough_1k.jpg"
     },
     {
       "filename": "industrial-overcast.hdr",
