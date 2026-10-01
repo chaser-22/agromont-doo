@@ -296,6 +296,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             url: string,
             slot: { anchor: any; fallbackObjects: any[] },
             animate?: (root: any) => ((elapsed: number) => void) | undefined,
+            options: { preRotateY?: number; scale?: number } = {},
           ) => {
             const gltf = await loader.loadAsync(url);
             const model = gltf.scene;
@@ -304,7 +305,9 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
             model.position.copy(slot.anchor.position);
             model.quaternion.copy(slot.anchor.quaternion);
+            if (options.preRotateY) model.rotateY(options.preRotateY);
             model.scale.copy(slot.anchor.scale);
+            if (options.scale) model.scale.multiplyScalar(options.scale);
             model.name = `UltraHero:${url.split("/").pop() ?? "asset"}`;
             model.traverse((object: any) => {
               if (object.isMesh) {
@@ -324,8 +327,23 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             root.dataset.heroAssets = String(loadedHeroAssets);
           };
 
+          const installTruck = async () => {
+            try {
+              // Preferred CC0 production asset uses +Z as vehicle forward.
+              await installHero(
+                "/models/truck-cc0.glb",
+                supplyScene.heroSlots.truck,
+                undefined,
+                { preRotateY: -Math.PI / 2 },
+              );
+            } catch {
+              // Deterministic build-generated truck uses the scene's native +X/-X convention.
+              await installHero("/models/truck-ultra.glb", supplyScene.heroSlots.truck);
+            }
+          };
+
           await Promise.allSettled([
-            installHero("/models/truck-ultra.glb", supplyScene.heroSlots.truck),
+            installTruck(),
             installHero("/models/egg-grader-ultra.glb", supplyScene.heroSlots.grader, (model) => {
               const eggMesh = model.getObjectByName("egg");
               if (!eggMesh) return undefined;
