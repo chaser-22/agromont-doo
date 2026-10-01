@@ -459,6 +459,22 @@ export function createDetailedFarmHall(
   const hall = addShadow(new THREE.Mesh(geometry, materials.hallPanel), options.shadows);
   group.add(hall);
 
+  const roofAngle = Math.atan2(1.35, width * 0.5);
+  const roofSlope = Math.hypot(width * 0.5, 1.35);
+  const roofShellGeo = new THREE.BoxGeometry(length * 0.982, 0.055, roofSlope * 1.015);
+  const roofShells = new THREE.InstancedMesh(roofShellGeo, materials.roofMetal, 2);
+  const roofShellDummy = new THREE.Object3D();
+  [-1, 1].forEach((side, index) => {
+    roofShellDummy.position.set(0, 3.235, side * width * 0.25);
+    roofShellDummy.rotation.set(side * roofAngle, 0, 0);
+    roofShellDummy.updateMatrix();
+    roofShells.setMatrixAt(index, roofShellDummy.matrix);
+  });
+  roofShells.instanceMatrix.needsUpdate = true;
+  roofShells.castShadow = options.shadows;
+  roofShells.receiveShadow = options.shadows;
+  group.add(roofShells);
+
   // Real poultry halls sit on a concrete plinth and show repeated structural bays.
   const plinth = addShadow(
     new THREE.Mesh(new THREE.BoxGeometry(length * 0.985, 0.24, width + 0.10), materials.concrete),
@@ -651,6 +667,20 @@ export function createDetailedTruck(
   cargo.position.set(1.25, 1.90, 0);
   group.add(cargo);
 
+  const trailerRailGeo = new THREE.BoxGeometry(5.32, 0.08, 0.06);
+  const trailerRails = new THREE.InstancedMesh(trailerRailGeo, materials.darkMetal, 4);
+  const railDummy = new THREE.Object3D();
+  let railIndex = 0;
+  for (const y of [0.78, 3.04]) {
+    for (const z of [-1.14, 1.14]) {
+      railDummy.position.set(1.25, y, z);
+      railDummy.updateMatrix();
+      trailerRails.setMatrixAt(railIndex++, railDummy.matrix);
+    }
+  }
+  trailerRails.instanceMatrix.needsUpdate = true;
+  group.add(trailerRails);
+
   if (!options.lowPower) {
     const ribGeo = new THREE.BoxGeometry(0.035, 2.15, 2.30);
     const ribs = new THREE.InstancedMesh(ribGeo, materials.darkMetal, 7);
@@ -705,6 +735,11 @@ export function createDetailedTruck(
   cabRoof.position.set(-2.10, 2.73, 0);
   group.add(cabRoof);
 
+  const sunVisor = new THREE.Mesh(new THREE.BoxGeometry(0.46, 0.08, 1.86), materials.darkMetal);
+  sunVisor.position.set(-2.93, 2.52, 0);
+  sunVisor.rotation.z = -0.16;
+  group.add(sunVisor);
+
   const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.green);
   lowerValance.position.set(-3.37, 0.93, 0);
   lowerValance.rotation.z = -0.10;
@@ -727,6 +762,43 @@ export function createDetailedTruck(
   const grille = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.48, 1.20), materials.darkMetal);
   grille.position.set(-3.48, 1.08, 0);
   group.add(grille);
+
+  const grilleSlatGeo = new THREE.BoxGeometry(0.035, 0.035, 1.04);
+  const grilleSlats = new THREE.InstancedMesh(grilleSlatGeo, materials.galvanized, 5);
+  const detailDummy = new THREE.Object3D();
+  for (let i = 0; i < 5; i++) {
+    detailDummy.position.set(-3.515, 0.90 + i * 0.09, 0);
+    detailDummy.rotation.set(0, 0, 0);
+    detailDummy.scale.set(1, 1, 1);
+    detailDummy.updateMatrix();
+    grilleSlats.setMatrixAt(i, detailDummy.matrix);
+  }
+  grilleSlats.instanceMatrix.needsUpdate = true;
+  group.add(grilleSlats);
+
+  const stepGeo = new THREE.BoxGeometry(0.72, 0.10, 0.24);
+  const steps = new THREE.InstancedMesh(stepGeo, materials.galvanized, 2);
+  [-1, 1].forEach((side, index) => {
+    detailDummy.position.set(-1.58, 0.72, side * 1.14);
+    detailDummy.updateMatrix();
+    steps.setMatrixAt(index, detailDummy.matrix);
+  });
+  steps.instanceMatrix.needsUpdate = true;
+  group.add(steps);
+
+  const seamGeo = new THREE.BoxGeometry(0.035, 1.35, 0.025);
+  const doorSeams = new THREE.InstancedMesh(seamGeo, materials.darkMetal, 4);
+  let seamIndex = 0;
+  for (const z of [-1.055, 1.055]) {
+    for (const x of [-2.64, -1.49]) {
+      detailDummy.position.set(x, 1.55, z);
+      detailDummy.rotation.set(0, 0, 0);
+      detailDummy.updateMatrix();
+      doorSeams.setMatrixAt(seamIndex++, detailDummy.matrix);
+    }
+  }
+  doorSeams.instanceMatrix.needsUpdate = true;
+  group.add(doorSeams);
 
   for (const z of [-0.72, 0.72]) {
     const light = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.18, 0.28), materials.lightLens);
