@@ -256,7 +256,7 @@ export function createUltraEggGrader(THREE: any, materials: any, options: HeroOp
   const eggCount = options.lowPower ? 8 : 20;
   for (let i = 0; i < eggCount; i++) {
     const egg = shadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
-    egg.scale.setScalar(0.25);
+    egg.scale.setScalar(0.065);
     egg.position.set(-3.82 + i * (7.15 / Math.max(1, eggCount - 1)), 1.46, ((i % rows) - (rows - 1) / 2) * rowSpacing);
     group.add(egg);
     eggs.push(egg);
