@@ -32,11 +32,6 @@ const ASSETS = [
     name: "grader",
     distances: [0, 18, 32],
   },
-  {
-    key: "truck" as const,
-    name: "truck",
-    distances: [0, 16, 30],
-  },
 ];
 
 function disposeObject(root: any) {
