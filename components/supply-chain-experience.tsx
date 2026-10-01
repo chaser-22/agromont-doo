@@ -98,12 +98,13 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
     let cleanup: (() => void) | undefined;
 
     const boot = async () => {
-      const THREE = await import("three");
+      let THREE: any = await import("three");
       if (cancelled) return;
 
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const mobile = window.matchMedia("(max-width: 900px)").matches;
       const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
+      const canAttemptWebGPU = !qaMode && !mobile && !reducedMotion && "gpu" in navigator;
 
       let contextLost = false;
       const onContextLost = (event: Event) => {
@@ -114,31 +115,58 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       canvas.addEventListener("webglcontextlost", onContextLost);
 
       let renderer: any;
-      try {
-        renderer = new THREE.WebGLRenderer({
-          canvas,
-          antialias: !mobile,
-          alpha: false,
-          powerPreference: "high-performance",
-          precision: lowPower ? "mediump" : "highp",
-        });
-      } catch {
-        setFailed(true);
-        canvas.removeEventListener("webglcontextlost", onContextLost);
-        return;
+      let webGPUActive = false;
+
+      if (canAttemptWebGPU) {
+        try {
+          const WEBGPU: any = await import("three/webgpu");
+          const candidate = new WEBGPU.WebGPURenderer({
+            canvas,
+            antialias: true,
+            alpha: false,
+            powerPreference: "high-performance",
+            samples: 4,
+          });
+          await candidate.init();
+          THREE = WEBGPU;
+          renderer = candidate;
+          webGPUActive = true;
+        } catch {
+          // High-end renderer is optional; fall through to the proven WebGL2 path.
+        }
+      }
+
+      if (!renderer) {
+        try {
+          const WEBGL: any = await import("three");
+          THREE = WEBGL;
+          renderer = new WEBGL.WebGLRenderer({
+            canvas,
+            antialias: !mobile,
+            alpha: false,
+            powerPreference: "high-performance",
+            precision: lowPower ? "mediump" : "highp",
+          });
+        } catch {
+          setFailed(true);
+          canvas.removeEventListener("webglcontextlost", onContextLost);
+          return;
+        }
       }
 
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
-      renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
+      renderer.toneMappingExposure = webGPUActive ? 1.03 : 1.0;
+      if ("transmissionResolutionScale" in renderer) {
+        renderer.transmissionResolutionScale = mobile ? 0.5 : webGPUActive ? 0.82 : 0.72;
+      }
       const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
       const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
       const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.70 : 0.70) : maxDpr;
       let currentDpr = qaDpr;
       renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
-      if (!mobile) {
+      if (!mobile && !webGPUActive) {
         renderer.shadowMap.type = THREE.PCFSoftShadowMap;
         renderer.shadowMap.autoUpdate = false;
         renderer.shadowMap.needsUpdate = true;
@@ -156,7 +184,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         const environmentScene = new RoomEnvironment();
         environmentTarget = pmremGenerator.fromScene(environmentScene, 0.055);
         scene.environment = environmentTarget.texture;
-        scene.environmentIntensity = mobile ? 0.52 : 0.62;
+        scene.environmentIntensity = mobile ? 0.52 : webGPUActive ? 0.72 : 0.62;
         environmentScene.dispose();
         pmremGenerator.dispose();
       } catch {
@@ -204,12 +232,12 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : 3.05);
+      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : webGPUActive ? 3.22 : 3.05);
       sun.position.set(-15, 20, 10);
       sun.target.position.set(2, 0.8, 0);
       sun.castShadow = !mobile;
       if (!mobile) {
-        sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
+        sun.shadow.mapSize.set(lowPower ? 1024 : webGPUActive ? 3072 : 2048, lowPower ? 1024 : webGPUActive ? 3072 : 2048);
         sun.shadow.camera.left = -31;
         sun.shadow.camera.right = 31;
         sun.shadow.camera.top = 26;
@@ -314,7 +342,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           camera.updateProjectionMatrix();
         }
 
-        const daylight = 0.98 + Math.sin(cameraProgress * Math.PI) * 0.035;
+        const daylightBase = webGPUActive ? 1.01 : 0.98;
+        const daylight = daylightBase + Math.sin(cameraProgress * Math.PI) * (webGPUActive ? 0.025 : 0.035);
         renderer.toneMappingExposure = daylight;
         processLight.intensity = (mobile ? 2.5 : 4.1) + Math.sin(elapsed * 0.72) * 0.14;
         gradingLight.intensity = (mobile ? 3.1 : 5.0) + Math.sin(elapsed * 0.55) * 0.12;
@@ -425,7 +454,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
                 geometries: renderer.info.memory.geometries,
                 textures: renderer.info.memory.textures,
               },
-              gpu: gpuInfo,
+              gpu: { ...gpuInfo, backend: webGPUActive ? "webgpu" : "webgl2" },
               timestamp: performance.now(),
             };
           },
