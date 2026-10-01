@@ -89,6 +89,7 @@ async function hdri(id, filename) {
 const files = [
   ...(await texture("asphalt_floor", "asphalt")),
   ...(await texture("concrete_floor_01", "concrete")),
+  ...(await texture("corrugated_iron_02", "corrugated")),
   await hdri("hanger_exterior_cloudy", "industrial-overcast.hdr"),
 ];
 
@@ -100,6 +101,7 @@ const manifest = {
   assets: {
     asphalt: "https://polyhaven.com/a/asphalt_floor",
     concrete: "https://polyhaven.com/a/concrete_floor_01",
+    corrugated: "https://polyhaven.com/a/corrugated_iron_02",
     hdri: "https://polyhaven.com/a/hanger_exterior_cloudy",
   },
   files,
