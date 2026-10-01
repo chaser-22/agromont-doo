@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feat/blender-pbr-hero-assets
+      - feat/final-photoreal-materials-lighting
     paths:
       - "tools/blender/**"
       - ".github/workflows/build-blender-hero-assets.yml"
