@@ -668,7 +668,7 @@ export function createDetailedTruck(
   group.add(cargo);
 
   const trailerRailGeo = new THREE.BoxGeometry(5.32, 0.08, 0.06);
-  const trailerRails = new THREE.InstancedMesh(trailerRailGeo, materials.darkMetal, 4);
+  const trailerRails = new THREE.InstancedMesh(trailerRailGeo, materials.galvanized, 4);
   const railDummy = new THREE.Object3D();
   let railIndex = 0;
   for (const y of [0.78, 3.04]) {
@@ -681,9 +681,33 @@ export function createDetailedTruck(
   trailerRails.instanceMatrix.needsUpdate = true;
   group.add(trailerRails);
 
+  const roofFairingShape = new THREE.Shape();
+  roofFairingShape.moveTo(-1.48, 2.62);
+  roofFairingShape.lineTo(-0.88, 3.13);
+  roofFairingShape.lineTo(-0.12, 3.13);
+  roofFairingShape.lineTo(-0.12, 2.62);
+  roofFairingShape.closePath();
+  const fairingGeo = new THREE.ExtrudeGeometry(roofFairingShape, {
+    depth: 1.98,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.025,
+    steps: 1,
+  });
+  fairingGeo.translate(0, 0, -0.99);
+  const roofFairing = new THREE.Mesh(fairingGeo, materials.offWhite);
+  group.add(roofFairing);
+
+  for (const z of [-0.96, 0.96]) {
+    const underrun = new THREE.Mesh(new THREE.BoxGeometry(4.55, 0.12, 0.08), materials.galvanized);
+    underrun.position.set(1.20, 0.62, z);
+    group.add(underrun);
+  }
+
   if (!options.lowPower) {
     const ribGeo = new THREE.BoxGeometry(0.035, 2.15, 2.30);
-    const ribs = new THREE.InstancedMesh(ribGeo, materials.darkMetal, 7);
+    const ribs = new THREE.InstancedMesh(ribGeo, materials.galvanized, 7);
     const ribDummy = new THREE.Object3D();
     for (let i = 0; i < 7; i++) {
       ribDummy.position.set(-0.85 + i * 0.72, 1.9, 0);
@@ -715,7 +739,7 @@ export function createDetailedTruck(
   });
   cabGeometry.translate(0, 0, -1.04);
   cabGeometry.computeVertexNormals();
-  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.green), options.shadows);
+  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.offWhite), options.shadows);
   group.add(cab);
 
   const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.82, 1.70), materials.glass);
@@ -729,7 +753,7 @@ export function createDetailedTruck(
   group.add(windscreenDivider);
 
   const cabRoof = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.green),
+    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.offWhite),
     options.shadows,
   );
   cabRoof.position.set(-2.10, 2.73, 0);
@@ -740,7 +764,12 @@ export function createDetailedTruck(
   sunVisor.rotation.z = -0.16;
   group.add(sunVisor);
 
-  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.green);
+  const windowSurround = new THREE.Mesh(new THREE.BoxGeometry(0.055, 1.10, 1.94), materials.darkMetal);
+  windowSurround.position.set(-3.055, 2.00, 0);
+  windowSurround.rotation.z = -0.275;
+  group.add(windowSurround);
+
+  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.offWhite);
   lowerValance.position.set(-3.37, 0.93, 0);
   lowerValance.rotation.z = -0.10;
   group.add(lowerValance);
@@ -755,7 +784,7 @@ export function createDetailedTruck(
     group.add(doorHandle);
   }
 
-  const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.22, 2.08), materials.galvanized);
+  const bumper = new THREE.Mesh(new THREE.BoxGeometry(0.20, 0.22, 2.08), materials.darkMetal);
   bumper.position.set(-3.57, 0.72, 0);
   group.add(bumper);
 
@@ -849,22 +878,22 @@ export function createDetailedTruck(
       hub.position.set(x, 0.47, z * 1.015);
       group.add(hub);
 
-      const sidewall = new THREE.Mesh(
-        new THREE.TorusGeometry(0.355, 0.035, options.lowPower ? 5 : 7, options.lowPower ? 14 : 22),
-        materials.darkMetal,
-      );
-      sidewall.position.set(x, 0.47, z * 1.018);
-      group.add(sidewall);
-
       if (!options.lowPower) {
-        const arch = new THREE.Mesh(
-          new THREE.TorusGeometry(0.54, 0.045, 6, 20, Math.PI),
-          materials.darkMetal,
+        const sidewall = new THREE.Mesh(
+          new THREE.TorusGeometry(0.355, 0.014, 5, 20),
+          materials.rubber,
         );
-        arch.position.set(x, 0.56, z * 1.018);
-        arch.rotation.z = 0;
-        group.add(arch);
+        sidewall.position.set(x, 0.47, z * 1.018);
+        group.add(sidewall);
       }
+    }
+  }
+
+  for (const x of [0.25, 2.55]) {
+    for (const z of [-1.02, 1.02]) {
+      const flap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.62, 0.34), materials.rubber);
+      flap.position.set(x + 0.42, 0.42, z);
+      group.add(flap);
     }
   }
 
