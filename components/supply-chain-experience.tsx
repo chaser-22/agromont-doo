@@ -60,13 +60,13 @@ function resolveStage(progress: number) {
 
 function interpolateFov(progress: number) {
   const points = [
-    [0.0, 30],
-    [0.13, 36],
-    [0.3, 32],
-    [0.49, 37],
-    [0.67, 29],
-    [0.82, 35],
-    [1.0, 42],
+    [0.0, 31],
+    [0.13, 35],
+    [0.3, 33],
+    [0.49, 36],
+    [0.67, 34],
+    [0.82, 37],
+    [1.0, 44],
   ] as const;
 
   for (let i = 0; i < points.length - 1; i++) {
@@ -147,7 +147,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const scene = new THREE.Scene();
       scene.background = new THREE.Color(0x536258);
-      scene.fog = new THREE.FogExp2(0x59665c, mobile ? 0.020 : 0.0155);
+      scene.fog = new THREE.FogExp2(0x59665c, mobile ? 0.0145 : 0.0108);
 
       let environmentTarget: any = null;
       try {
@@ -166,36 +166,36 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const cameraPoints = mobile
         ? [
-            new THREE.Vector3(-20.4, 1.85, 7.5),
-            new THREE.Vector3(-13.6, 4.3, 10.1),
-            new THREE.Vector3(2.5, 5.6, 11.8),
-            new THREE.Vector3(17.8, 4.0, 11.6),
-            new THREE.Vector3(17.5, 2.65, 10.1),
-            new THREE.Vector3(7.6, 4.2, 14.2),
-            new THREE.Vector3(3.6, 15.6, 27.0),
+            new THREE.Vector3(-21.0, 2.45, 8.6),
+            new THREE.Vector3(-12.9, 4.55, 10.3),
+            new THREE.Vector3(1.7, 6.0, 12.5),
+            new THREE.Vector3(24.6, 5.1, 13.6),
+            new THREE.Vector3(22.6, 3.85, 14.8),
+            new THREE.Vector3(8.7, 4.8, 16.5),
+            new THREE.Vector3(4.0, 18.3, 30.6),
           ]
         : [
-            new THREE.Vector3(-20.9, 1.12, 4.9),
-            new THREE.Vector3(-13.4, 2.85, 7.7),
-            new THREE.Vector3(2.9, 4.35, 8.9),
-            new THREE.Vector3(18.6, 2.7, 5.6),
-            new THREE.Vector3(18.2, 1.95, 8.8),
-            new THREE.Vector3(7.3, 2.15, 12.8),
-            new THREE.Vector3(3.4, 17.4, 28.6),
+            new THREE.Vector3(-21.4, 1.75, 6.5),
+            new THREE.Vector3(-12.9, 3.45, 7.9),
+            new THREE.Vector3(2.4, 4.85, 9.8),
+            new THREE.Vector3(24.1, 4.15, 10.9),
+            new THREE.Vector3(21.9, 2.85, 13.0),
+            new THREE.Vector3(8.8, 3.2, 14.5),
+            new THREE.Vector3(3.8, 19.6, 31.6),
           ];
 
       const targetPoints = [
-        new THREE.Vector3(-18.0, 0.95, 0.0),
-        new THREE.Vector3(-8.5, 5.1, -4.0),
-        new THREE.Vector3(1.4, 4.6, -2.1),
-        new THREE.Vector3(16.1, 1.55, 0.6),
-        new THREE.Vector3(14.8, 1.35, 4.0),
-        new THREE.Vector3(3.1, 1.45, 7.0),
-        new THREE.Vector3(2.0, 1.6, 0.0),
+        new THREE.Vector3(-18.0, 1.35, -1.2),
+        new THREE.Vector3(-6.3, 4.8, -4.0),
+        new THREE.Vector3(1.3, 4.6, -2.15),
+        new THREE.Vector3(16.2, 1.85, -1.1),
+        new THREE.Vector3(14.6, 1.35, 7.15),
+        new THREE.Vector3(3.1, 1.45, 7.15),
+        new THREE.Vector3(2.0, 1.55, 0.0),
       ];
 
-      const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "catmullrom", 0.42);
-      const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "catmullrom", 0.4);
+      const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "centripetal");
+      const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "centripetal");
 
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
       scene.add(supplyScene.world);
@@ -234,7 +234,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const gradingLight = new THREE.SpotLight(0xffd8a4, mobile ? 4.8 : 7.5, 21, Math.PI / 6.3, 0.6, 1.45);
       gradingLight.position.set(14.6, 6.7, 9.6);
-      gradingLight.target.position.set(14.8, 0.9, 4.0);
+      gradingLight.target.position.set(14.8, 1.0, 7.15);
       scene.add(gradingLight, gradingLight.target);
 
       let viewportWidth = 0;
@@ -307,7 +307,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
         camera.position.copy(cameraPosition);
         camera.lookAt(targetPosition);
-        const nextFov = interpolateFov(cameraProgress);
+        const nextFov = interpolateFov(cameraProgress) + (mobile ? 4.0 : 0);
         if (Math.abs(camera.fov - nextFov) > 0.02) {
           camera.fov = qaMode ? nextFov : camera.fov + (nextFov - camera.fov) * 0.14;
           camera.updateProjectionMatrix();
@@ -318,7 +318,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         processLight.intensity = (mobile ? 3.2 : 5.5) + Math.sin(elapsed * 0.72) * 0.24;
         gradingLight.intensity = (mobile ? 4.6 : 7.2) + Math.sin(elapsed * 0.55) * 0.18;
         sun.position.x = -16 + cameraProgress * 8.5;
-        if (scene.fog) scene.fog.density = (mobile ? 0.020 : 0.0155) + cameraProgress * 0.0016;
+        if (scene.fog) scene.fog.density = (mobile ? 0.0145 : 0.0108) + cameraProgress * 0.0008;
 
         supplyScene.update(elapsed, cameraProgress);
         renderer.render(scene, camera);
