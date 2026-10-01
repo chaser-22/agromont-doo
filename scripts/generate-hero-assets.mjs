@@ -79,6 +79,21 @@ async function write(scene,file){
   console.log(`[hero-assets] ${file} ${(buffer.byteLength/1024).toFixed(1)} KiB`);
 }
 
+async function fetchCC0Asset(url,file){
+  try {
+    const response=await fetch(url,{headers:{'user-agent':'AGROMONT-build/1.0'}});
+    if(!response.ok) throw new Error(`HTTP ${response.status}`);
+    const buffer=Buffer.from(await response.arrayBuffer());
+    if(buffer.byteLength < 1024) throw new Error('asset response too small');
+    fs.writeFileSync(path.join(outputDir,file),buffer);
+    console.log(`[hero-assets] ${file} CC0 external ${(buffer.byteLength/1024).toFixed(1)} KiB`);
+    return true;
+  } catch(error) {
+    console.warn(`[hero-assets] optional CC0 asset unavailable (${file}); using generated fallback`,error?.message ?? error);
+    return false;
+  }
+}
+
 function buildTruck(){
   const p=collection();
 
@@ -236,5 +251,9 @@ function buildFeedProcess(){
 }
 
 await write(buildTruck(),'truck-ultra.glb');
+await fetchCC0Asset(
+  'https://cdn.3dassets.dev/assets/32533/v1/model.glb',
+  'truck-cc0.glb',
+);
 await write(buildGrader(),'egg-grader-ultra.glb');
 await write(buildFeedProcess(),'feed-process-ultra.glb');
