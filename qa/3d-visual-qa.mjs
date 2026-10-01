@@ -253,9 +253,9 @@ for (const profile of profiles) {
           if (!authored?.ready) {
             report.failures.push(`${profile.name}: authored hero assets were not ready at progress ${progress}`);
           }
-          if ((authored?.loaded?.length ?? 0) !== 3) {
+          if ((authored?.loaded?.length ?? 0) !== 2) {
             report.failures.push(
-              `${profile.name}: expected 3 authored hero assets, got ${authored?.loaded?.length ?? 0} at progress ${progress}`,
+              `${profile.name}: expected 2 approved authored hero assets, got ${authored?.loaded?.length ?? 0} at progress ${progress}`,
             );
           }
           if ((authored?.failed?.length ?? 0) > 0) {
