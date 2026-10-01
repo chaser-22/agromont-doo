@@ -81,7 +81,7 @@ function interpolateFov(progress: number) {
   return points[points.length - 1][1];
 }
 
-export function SupplyChainExperience() {
+export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } = {}) {
   const rootRef = useRef<HTMLElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
@@ -105,8 +105,10 @@ export function SupplyChainExperience() {
       const mobile = window.matchMedia("(max-width: 900px)").matches;
       const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
 
+      let contextLost = false;
       const onContextLost = (event: Event) => {
         event.preventDefault();
+        contextLost = true;
         setFailed(true);
       };
       canvas.addEventListener("webglcontextlost", onContextLost);
@@ -132,7 +134,8 @@ export function SupplyChainExperience() {
       renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
       const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
       const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
-      let currentDpr = maxDpr;
+      const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.76 : 0.78) : maxDpr;
+      let currentDpr = qaDpr;
       renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
       if (!mobile) {
@@ -248,6 +251,7 @@ export function SupplyChainExperience() {
       let targetPointerY = 0;
       let perfWindowStart = 0;
       let perfFrames = 0;
+      let latestFps = 0;
       const clock = new THREE.Clock();
       const cameraPosition = new THREE.Vector3();
       const targetPosition = new THREE.Vector3();
@@ -264,24 +268,29 @@ export function SupplyChainExperience() {
         camera.updateProjectionMatrix();
       };
 
-      const updateScroll = () => {
-        const rect = root.getBoundingClientRect();
-        const viewport = Math.max(window.innerHeight, 1);
-        const travel = Math.max(root.offsetHeight - viewport, 1);
-        progress = Math.min(1, Math.max(0, -rect.top / travel));
+      const applyProgress = (nextProgress: number) => {
+        progress = Math.min(1, Math.max(0, nextProgress));
         root.style.setProperty("--supply-progress", progress.toFixed(4));
 
         const nextStage = resolveStage(progress);
         setActiveStage((current) => current === nextStage ? current : nextStage);
         const nextPastIntro = progress > (mobile ? 0.055 : 0.07);
         setPastIntro((current) => current === nextPastIntro ? current : nextPastIntro);
+      };
+
+      const updateScroll = () => {
+        if (qaMode) return;
+        const rect = root.getBoundingClientRect();
+        const viewport = Math.max(window.innerHeight, 1);
+        const travel = Math.max(root.offsetHeight - viewport, 1);
+        applyProgress(-rect.top / travel);
 
         if (reducedMotion) ensureFrame();
       };
 
       const draw = () => {
         resize();
-        const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
+        const elapsed = reducedMotion ? 0 : qaMode ? progress * 12 : clock.getElapsedTime();
 
         pointerX += (targetPointerX - pointerX) * 0.045;
         pointerY += (targetPointerY - pointerY) * 0.045;
@@ -300,7 +309,7 @@ export function SupplyChainExperience() {
         camera.lookAt(targetPosition);
         const nextFov = interpolateFov(cameraProgress);
         if (Math.abs(camera.fov - nextFov) > 0.02) {
-          camera.fov += (nextFov - camera.fov) * 0.14;
+          camera.fov = qaMode ? nextFov : camera.fov + (nextFov - camera.fov) * 0.14;
           camera.updateProjectionMatrix();
         }
 
@@ -334,6 +343,7 @@ export function SupplyChainExperience() {
             const perfWindow = time - perfWindowStart;
             if (perfWindow >= 1800) {
               const fps = perfFrames / (perfWindow / 1000);
+              latestFps = fps;
               const floor = mobile ? 28 : 44;
               if (fps < floor && currentDpr > minDpr + 0.02) {
                 currentDpr = Math.max(minDpr, currentDpr - 0.12);
@@ -345,7 +355,7 @@ export function SupplyChainExperience() {
             }
           }
         }
-        if (!reducedMotion) raf = requestAnimationFrame(loop);
+        if (!reducedMotion && !qaMode) raf = requestAnimationFrame(loop);
       };
 
       const ensureFrame = () => {
@@ -362,6 +372,66 @@ export function SupplyChainExperience() {
         targetPointerX = (event.clientX / Math.max(window.innerWidth, 1) - 0.5) * 2;
         targetPointerY = -(event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
       };
+
+      const qaWindow = window as any;
+      let gpuInfo = { vendor: "unknown", renderer: "unknown" };
+      try {
+        const gl = renderer.getContext();
+        const debugInfo = gl.getExtension("WEBGL_debug_renderer_info");
+        if (debugInfo) {
+          gpuInfo = {
+            vendor: String(gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL) || "unknown"),
+            renderer: String(gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL) || "unknown"),
+          };
+        }
+      } catch {
+        // GPU vendor strings are optional and may be blocked by browser privacy settings.
+      }
+
+      if (qaMode) {
+        qaWindow.__AGROMONT_3D_QA__ = {
+          version: 1,
+          ready: true,
+          setProgress(value: number) {
+            applyProgress(Number.isFinite(value) ? value : 0);
+            draw();
+            return this.snapshot();
+          },
+          snapshot() {
+            return {
+              ready: markedReady,
+              failed: contextLost,
+              progress,
+              stage: resolveStage(progress) + 1,
+              stageCode: stages[resolveStage(progress)].code,
+              mobile,
+              lowPower,
+              reducedMotion,
+              viewport: { width: viewportWidth, height: viewportHeight },
+              dpr: currentDpr,
+              fps: latestFps,
+              camera: {
+                position: camera.position.toArray(),
+                target: targetPosition.toArray(),
+                fov: camera.fov,
+                near: camera.near,
+                far: camera.far,
+              },
+              renderer: {
+                calls: renderer.info.render.calls,
+                triangles: renderer.info.render.triangles,
+                points: renderer.info.render.points,
+                lines: renderer.info.render.lines,
+                geometries: renderer.info.memory.geometries,
+                textures: renderer.info.memory.textures,
+              },
+              gpu: gpuInfo,
+              timestamp: performance.now(),
+            };
+          },
+        };
+        applyProgress(0);
+      }
 
       const onScroll = () => updateScroll();
       const onVisibility = () => {
@@ -385,8 +455,8 @@ export function SupplyChainExperience() {
 
       observer.observe(root);
       resizeObserver.observe(canvas);
-      window.addEventListener("scroll", onScroll, { passive: true });
-      if (!mobile) window.addEventListener("pointermove", onPointerMove, { passive: true });
+      if (!qaMode) window.addEventListener("scroll", onScroll, { passive: true });
+      if (!mobile && !qaMode) window.addEventListener("pointermove", onPointerMove, { passive: true });
       document.addEventListener("visibilitychange", onVisibility);
 
       updateScroll();
@@ -396,8 +466,9 @@ export function SupplyChainExperience() {
       cleanup = () => {
         observer.disconnect();
         resizeObserver.disconnect();
-        window.removeEventListener("scroll", onScroll);
-        if (!mobile) window.removeEventListener("pointermove", onPointerMove);
+        if (!qaMode) window.removeEventListener("scroll", onScroll);
+        if (!mobile && !qaMode) window.removeEventListener("pointermove", onPointerMove);
+        if (qaWindow.__AGROMONT_3D_QA__) delete qaWindow.__AGROMONT_3D_QA__;
         document.removeEventListener("visibilitychange", onVisibility);
         if (raf) cancelAnimationFrame(raf);
         canvas.removeEventListener("webglcontextlost", onContextLost);
@@ -413,12 +484,12 @@ export function SupplyChainExperience() {
       cancelled = true;
       cleanup?.();
     };
-  }, []);
+  }, [qaMode]);
 
   return (
     <section
       ref={rootRef}
-      className={`supply-experience ${ready ? "is-ready" : ""} ${failed ? "is-fallback" : ""}`}
+      className={`supply-experience ${qaMode ? "is-qa-mode" : ""} ${ready ? "is-ready" : ""} ${failed ? "is-fallback" : ""}`}
       id="proizvodnja"
       aria-labelledby="supply-title"
     >
