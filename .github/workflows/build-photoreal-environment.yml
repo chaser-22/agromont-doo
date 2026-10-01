@@ -1,0 +1,65 @@
+name: Build photoreal environment assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/final-photoreal-materials-lighting
+    paths:
+      - "scripts/fetch-photoreal-assets.mjs"
+      - ".github/workflows/build-photoreal-environment.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: photoreal-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-environment-assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download CC0 scanned PBR maps and industrial HDRI
+        run: node scripts/fetch-photoreal-assets.mjs
+
+      - name: Verify required assets
+        run: |
+          set -euxo pipefail
+          test -f public/assets/photoreal/asphalt-basecolor.jpg
+          test -f public/assets/photoreal/asphalt-normal.jpg
+          test -f public/assets/photoreal/asphalt-roughness.jpg
+          test -f public/assets/photoreal/concrete-basecolor.jpg
+          test -f public/assets/photoreal/concrete-normal.jpg
+          test -f public/assets/photoreal/concrete-roughness.jpg
+          test -f public/assets/photoreal/industrial-overcast.hdr
+
+      - name: Commit production environment assets
+        if: github.event_name == 'push'
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/photoreal
+          if git diff --cached --quiet; then
+            echo "No environment asset changes."
+          else
+            git commit -m "Add scanned photoreal environment assets"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload environment asset artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agromont-photoreal-environment-assets
+          path: public/assets/photoreal/
+          if-no-files-found: error
+          retention-days: 14
