@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { buildSupplyChainScene } from "@/lib/supply-chain-scene";
+import { resolveSupplyQuality } from "@/lib/render-quality";
 
 const stages = [
   {
@@ -98,12 +99,21 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
     let cleanup: (() => void) | undefined;
 
     const boot = async () => {
-      const THREE = await import("three");
-      if (cancelled) return;
-
       const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const mobile = window.matchMedia("(max-width: 900px)").matches;
-      const lowPower = mobile && ((navigator.hardwareConcurrency ?? 8) <= 4 || window.innerWidth <= 430);
+      const hardwareConcurrency = navigator.hardwareConcurrency ?? 8;
+      const deviceMemory = (navigator as Navigator & { deviceMemory?: number }).deviceMemory;
+      const webGPUAvailable = typeof (navigator as Navigator & { gpu?: unknown }).gpu !== "undefined";
+      const lowPower = mobile && (hardwareConcurrency <= 4 || window.innerWidth <= 430);
+      const quality = resolveSupplyQuality({
+        qaMode,
+        reducedMotion,
+        width: window.innerWidth,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        hardwareConcurrency,
+        deviceMemory,
+        webGPUAvailable,
+      });
 
       let contextLost = false;
       const onContextLost = (event: Event) => {
@@ -111,37 +121,81 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         contextLost = true;
         setFailed(true);
       };
-      canvas.addEventListener("webglcontextlost", onContextLost);
 
+      let THREE: any;
       let renderer: any;
+      let rendererBackend: "webgpu" | "webgl2" = "webgl2";
+
       try {
-        renderer = new THREE.WebGLRenderer({
-          canvas,
-          antialias: !mobile,
-          alpha: false,
-          powerPreference: "high-performance",
-          precision: lowPower ? "mediump" : "highp",
-        });
+        if (quality.preferWebGPU) {
+          THREE = await import("three/webgpu");
+          renderer = new THREE.WebGPURenderer({
+            canvas,
+            antialias: true,
+            alpha: false,
+          });
+          await renderer.init();
+          rendererBackend = "webgpu";
+        } else {
+          THREE = await import("three");
+          renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: !mobile,
+            alpha: false,
+            powerPreference: "high-performance",
+            precision: lowPower ? "mediump" : "highp",
+          });
+          canvas.addEventListener("webglcontextlost", onContextLost);
+        }
       } catch {
-        setFailed(true);
-        canvas.removeEventListener("webglcontextlost", onContextLost);
+        // WebGPU is an enhancement, never a hard dependency. If it fails during
+        // initialization we immediately fall back to the proven WebGL renderer.
+        try {
+          THREE = await import("three");
+          renderer = new THREE.WebGLRenderer({
+            canvas,
+            antialias: !mobile,
+            alpha: false,
+            powerPreference: "high-performance",
+            precision: lowPower ? "mediump" : "highp",
+          });
+          rendererBackend = "webgl2";
+          canvas.addEventListener("webglcontextlost", onContextLost);
+        } catch {
+          setFailed(true);
+          return;
+        }
+      }
+
+      if (cancelled) {
+        renderer.dispose?.();
         return;
       }
 
+      root.dataset.renderTier = quality.tier;
+      root.dataset.renderBackend = rendererBackend;
+
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.AgXToneMapping ?? THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.0;
-      renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
-      const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
-      const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
-      const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.70 : 0.70) : maxDpr;
-      let currentDpr = qaDpr;
+      renderer.toneMappingExposure = quality.ultra ? 1.02 : 1.0;
+      if ("transmissionResolutionScale" in renderer) {
+        renderer.transmissionResolutionScale = quality.transmissionScale;
+      }
+
+      const maxDpr = quality.maxDpr;
+      const minDpr = quality.minDpr;
+      let currentDpr = maxDpr;
       renderer.setPixelRatio(currentDpr);
-      renderer.shadowMap.enabled = !mobile;
-      if (!mobile) {
-        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-        renderer.shadowMap.autoUpdate = false;
-        renderer.shadowMap.needsUpdate = true;
+
+      if (renderer.shadowMap) {
+        renderer.shadowMap.enabled = quality.shadowMapSize > 0;
+        if (quality.shadowMapSize > 0) {
+          if (!quality.preferWebGPU && THREE.PCFSoftShadowMap != null) {
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+          }
+          renderer.shadowMap.autoUpdate = false;
+          renderer.shadowMap.needsUpdate = true;
+        }
       }
       renderer.setClearColor(0x7f8c86, 1);
 
@@ -150,17 +204,45 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       scene.fog = new THREE.FogExp2(0x8f9991, mobile ? 0.0118 : 0.0088);
 
       let environmentTarget: any = null;
+      let environmentTexture: any = null;
       try {
-        const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
-        const pmremGenerator = new THREE.PMREMGenerator(renderer);
-        const environmentScene = new RoomEnvironment();
-        environmentTarget = pmremGenerator.fromScene(environmentScene, 0.055);
-        scene.environment = environmentTarget.texture;
-        scene.environmentIntensity = mobile ? 0.52 : 0.62;
-        environmentScene.dispose();
-        pmremGenerator.dispose();
+        if (quality.ultra) {
+          // Lightweight outdoor reflection environment that is renderer-agnostic.
+          // This avoids forcing WebGPU through the WebGL-only PMREM generator.
+          const faceColors = [
+            ["#aebcc1", "#d8d1bd"], ["#9babae", "#c9c4b3"],
+            ["#7f98a5", "#d8d1bd"], ["#65685e", "#8c8a7d"],
+            ["#a8b7bd", "#d6cfba"], ["#9eadae", "#cfc9b7"],
+          ] as const;
+          const faces = faceColors.map(([top, bottom]) => {
+            const face = document.createElement("canvas");
+            face.width = 64;
+            face.height = 64;
+            const ctx = face.getContext("2d")!;
+            const gradient = ctx.createLinearGradient(0, 0, 0, 64);
+            gradient.addColorStop(0, top);
+            gradient.addColorStop(1, bottom);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 64, 64);
+            return face;
+          });
+          environmentTexture = new THREE.CubeTexture(faces);
+          environmentTexture.colorSpace = THREE.SRGBColorSpace;
+          environmentTexture.needsUpdate = true;
+          scene.environment = environmentTexture;
+          scene.environmentIntensity = 0.72;
+        } else {
+          const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
+          const pmremGenerator = new THREE.PMREMGenerator(renderer);
+          const environmentScene = new RoomEnvironment();
+          environmentTarget = pmremGenerator.fromScene(environmentScene, 0.055);
+          scene.environment = environmentTarget.texture;
+          scene.environmentIntensity = mobile ? 0.52 : 0.62;
+          environmentScene.dispose();
+          pmremGenerator.dispose();
+        }
       } catch {
-        // Direct lights still provide a complete fallback if the optional IBL helper is unavailable.
+        // Direct lights still provide a complete fallback if optional IBL is unavailable.
       }
 
       const camera = new THREE.PerspectiveCamera(mobile ? 39 : 33, 1, 0.08, 145);
@@ -198,42 +280,120 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "centripetal");
       const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "centripetal");
 
-      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
+      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, quality: quality.tier });
       scene.add(supplyScene.world);
 
-      const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
+      const heroAnimations: Array<(elapsed: number) => void> = [];
+      let loadedHeroAssets = 0;
+      root.dataset.heroAssets = "procedural";
+
+      if (!mobile) {
+        try {
+          const { GLTFLoader } = await import("three/addons/loaders/GLTFLoader.js");
+          const loader = new GLTFLoader();
+
+          const installHero = async (
+            url: string,
+            slot: { anchor: any; fallbackObjects: any[] },
+            animate?: (root: any) => ((elapsed: number) => void) | undefined,
+            options: { preRotateY?: number; scale?: number } = {},
+          ) => {
+            const gltf = await loader.loadAsync(url);
+            const model = gltf.scene;
+            const parent = slot.anchor.parent;
+            if (!parent) return;
+
+            model.position.copy(slot.anchor.position);
+            model.quaternion.copy(slot.anchor.quaternion);
+            if (options.preRotateY) model.rotateY(options.preRotateY);
+            model.scale.copy(slot.anchor.scale);
+            if (options.scale) model.scale.multiplyScalar(options.scale);
+            model.name = `UltraHero:${url.split("/").pop() ?? "asset"}`;
+            model.traverse((object: any) => {
+              if (object.isMesh) {
+                object.castShadow = quality.shadowMapSize > 0;
+                object.receiveShadow = quality.shadowMapSize > 0;
+              }
+            });
+
+            parent.add(model);
+            slot.fallbackObjects.forEach((object: any) => {
+              object.visible = false;
+            });
+
+            const animation = animate?.(model);
+            if (animation) heroAnimations.push(animation);
+            loadedHeroAssets += 1;
+            root.dataset.heroAssets = String(loadedHeroAssets);
+          };
+
+          const installTruck = async () => {
+            try {
+              // Preferred CC0 production asset uses +Z as vehicle forward.
+              await installHero(
+                "/models/truck-cc0.glb",
+                supplyScene.heroSlots.truck,
+                undefined,
+                { preRotateY: -Math.PI / 2 },
+              );
+            } catch {
+              // Deterministic build-generated truck uses the scene's native +X/-X convention.
+              await installHero("/models/truck-ultra.glb", supplyScene.heroSlots.truck);
+            }
+          };
+
+          await Promise.allSettled([
+            installTruck(),
+            installHero("/models/egg-grader-ultra.glb", supplyScene.heroSlots.grader, (model) => {
+              const eggMesh = model.getObjectByName("egg");
+              if (!eggMesh) return undefined;
+              const baseX = eggMesh.position.x;
+              const baseY = eggMesh.position.y;
+              return (elapsed: number) => {
+                eggMesh.position.x = baseX + Math.sin(elapsed * 0.72) * 0.075;
+                eggMesh.position.y = baseY + Math.sin(elapsed * 1.45) * 0.008;
+              };
+            }),
+          ]);
+        } catch {
+          // Desktop hero assets are an enhancement. The procedural versions
+          // remain visible if the loader or an individual GLB is unavailable.
+        }
+      }
+
+      const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : quality.ultra ? 0.84 : 0.98);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : 3.05);
+      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : quality.ultra ? 3.25 : 3.05);
       sun.position.set(-15, 20, 10);
       sun.target.position.set(2, 0.8, 0);
       sun.castShadow = !mobile;
       if (!mobile) {
-        sun.shadow.mapSize.set(lowPower ? 1024 : 2048, lowPower ? 1024 : 2048);
+        sun.shadow.mapSize.set(quality.shadowMapSize, quality.shadowMapSize);
         sun.shadow.camera.left = -31;
         sun.shadow.camera.right = 31;
         sun.shadow.camera.top = 26;
         sun.shadow.camera.bottom = -21;
         sun.shadow.camera.near = 1;
         sun.shadow.camera.far = 72;
-        sun.shadow.bias = -0.00028;
-        sun.shadow.normalBias = 0.018;
+        sun.shadow.bias = quality.ultra ? -0.00018 : -0.00028;
+        sun.shadow.normalBias = quality.ultra ? 0.012 : 0.018;
       }
       scene.add(sun, sun.target);
 
-      const coolFill = new THREE.DirectionalLight(0xa9bcc3, mobile ? 0.28 : 0.36);
+      const coolFill = new THREE.DirectionalLight(0xa9bcc3, mobile ? 0.28 : quality.ultra ? 0.27 : 0.36);
       coolFill.position.set(21, 11, -16);
       scene.add(coolFill);
 
-      const warmBounce = new THREE.DirectionalLight(0xd2a477, mobile ? 0.16 : 0.24);
+      const warmBounce = new THREE.DirectionalLight(0xd2a477, mobile ? 0.16 : quality.ultra ? 0.14 : 0.24);
       warmBounce.position.set(-8, 4, 18);
       scene.add(warmBounce);
 
-      const processLight = new THREE.PointLight(0xf0a128, mobile ? 2.6 : 4.2, 15, 2);
+      const processLight = new THREE.PointLight(0xf0a128, mobile ? 2.6 : quality.ultra ? 3.25 : 4.2, 15, 2);
       processLight.position.set(2.0, 4.8, 1.5);
       scene.add(processLight);
 
-      const gradingLight = new THREE.SpotLight(0xffddb1, mobile ? 3.2 : 5.2, 19, Math.PI / 6.0, 0.66, 1.5);
+      const gradingLight = new THREE.SpotLight(0xffddb1, mobile ? 3.2 : quality.ultra ? 4.25 : 5.2, 19, Math.PI / 6.0, 0.66, 1.5);
       gradingLight.position.set(14.6, 6.7, 15.2);
       gradingLight.target.position.set(14.8, 1.0, 13.05);
       scene.add(gradingLight, gradingLight.target);
@@ -314,13 +474,14 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           camera.updateProjectionMatrix();
         }
 
-        const daylight = 0.98 + Math.sin(cameraProgress * Math.PI) * 0.035;
+        const daylight = (quality.ultra ? 1.01 : 0.98) + Math.sin(cameraProgress * Math.PI) * (quality.ultra ? 0.025 : 0.035);
         renderer.toneMappingExposure = daylight;
-        processLight.intensity = (mobile ? 2.5 : 4.1) + Math.sin(elapsed * 0.72) * 0.14;
-        gradingLight.intensity = (mobile ? 3.1 : 5.0) + Math.sin(elapsed * 0.55) * 0.12;
-        if (scene.fog) scene.fog.density = (mobile ? 0.0118 : 0.0088) + cameraProgress * 0.00045;
+        processLight.intensity = (mobile ? 2.5 : quality.ultra ? 3.2 : 4.1) + Math.sin(elapsed * 0.72) * 0.12;
+        gradingLight.intensity = (mobile ? 3.1 : quality.ultra ? 4.1 : 5.0) + Math.sin(elapsed * 0.55) * 0.10;
+        if (scene.fog) scene.fog.density = (mobile ? 0.0118 : quality.ultra ? 0.0076 : 0.0088) + cameraProgress * 0.0004;
 
         supplyScene.update(elapsed, cameraProgress);
+        heroAnimations.forEach((animate) => animate(elapsed));
         renderer.render(scene, camera);
 
         if (!markedReady) {
@@ -344,7 +505,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             if (perfWindow >= 1800) {
               const fps = perfFrames / (perfWindow / 1000);
               latestFps = fps;
-              const floor = mobile ? 28 : 44;
+              const floor = quality.targetFps;
               if (fps < floor && currentDpr > minDpr + 0.02) {
                 currentDpr = Math.max(minDpr, currentDpr - 0.12);
                 renderer.setPixelRatio(currentDpr);
@@ -407,6 +568,9 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               mobile,
               lowPower,
               reducedMotion,
+              quality: quality.tier,
+              backend: rendererBackend,
+              heroAssets: loadedHeroAssets,
               viewport: { width: viewportWidth, height: viewportHeight },
               dpr: currentDpr,
               fps: latestFps,
@@ -474,6 +638,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         canvas.removeEventListener("webglcontextlost", onContextLost);
         supplyScene.dispose();
         environmentTarget?.dispose?.();
+        environmentTexture?.dispose?.();
         renderer.dispose();
       };
     };
