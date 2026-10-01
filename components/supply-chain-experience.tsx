@@ -60,12 +60,12 @@ function resolveStage(progress: number) {
 
 function interpolateFov(progress: number) {
   const points = [
-    [0.0, 30],
-    [0.13, 36],
-    [0.3, 32],
-    [0.49, 37],
-    [0.67, 29],
-    [0.82, 35],
+    [0.0, 34],
+    [0.13, 38],
+    [0.3, 35],
+    [0.49, 38],
+    [0.67, 34],
+    [0.82, 37],
     [1.0, 42],
   ] as const;
 
@@ -164,38 +164,40 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const camera = new THREE.PerspectiveCamera(mobile ? 39 : 33, 1, 0.08, 145);
 
+      // Keep the cinematic route outside the physical facility volumes. Close-up scale
+      // comes from focal length and target choice rather than flying through opaque meshes.
       const cameraPoints = mobile
         ? [
-            new THREE.Vector3(-20.4, 1.85, 7.5),
-            new THREE.Vector3(-13.6, 4.3, 10.1),
-            new THREE.Vector3(2.5, 5.6, 11.8),
-            new THREE.Vector3(17.8, 4.0, 11.6),
-            new THREE.Vector3(17.5, 2.65, 10.1),
-            new THREE.Vector3(7.6, 4.2, 14.2),
+            new THREE.Vector3(-22.5, 4.2, 14.5),
+            new THREE.Vector3(-15.5, 5.5, 15.5),
+            new THREE.Vector3(-4.5, 6.5, 16.0),
+            new THREE.Vector3(9.5, 6.5, 18.0),
+            new THREE.Vector3(17.0, 6.0, 18.5),
+            new THREE.Vector3(7.6, 6.2, 19.0),
             new THREE.Vector3(3.6, 15.6, 27.0),
           ]
         : [
-            new THREE.Vector3(-20.9, 1.12, 4.9),
-            new THREE.Vector3(-13.4, 2.85, 7.7),
-            new THREE.Vector3(2.9, 4.35, 8.9),
-            new THREE.Vector3(18.6, 2.7, 5.6),
-            new THREE.Vector3(18.2, 1.95, 8.8),
-            new THREE.Vector3(7.3, 2.15, 12.8),
+            new THREE.Vector3(-23.0, 2.8, 10.5),
+            new THREE.Vector3(-15.8, 4.5, 12.5),
+            new THREE.Vector3(-4.8, 5.0, 13.5),
+            new THREE.Vector3(9.0, 5.1, 15.5),
+            new THREE.Vector3(17.5, 5.0, 15.8),
+            new THREE.Vector3(7.8, 4.3, 17.2),
             new THREE.Vector3(3.4, 17.4, 28.6),
           ];
 
       const targetPoints = [
-        new THREE.Vector3(-18.0, 0.95, 0.0),
-        new THREE.Vector3(-8.5, 5.1, -4.0),
-        new THREE.Vector3(1.4, 4.6, -2.1),
-        new THREE.Vector3(16.1, 1.55, 0.6),
-        new THREE.Vector3(14.8, 1.35, 4.0),
-        new THREE.Vector3(3.1, 1.45, 7.0),
+        new THREE.Vector3(-17.5, 1.6, -1.3),
+        new THREE.Vector3(-9.0, 4.8, -3.8),
+        new THREE.Vector3(0.6, 4.4, -2.2),
+        new THREE.Vector3(16.0, 2.0, -2.5),
+        new THREE.Vector3(14.6, 1.8, 6.3),
+        new THREE.Vector3(3.2, 1.6, 7.3),
         new THREE.Vector3(2.0, 1.6, 0.0),
       ];
 
-      const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "catmullrom", 0.42);
-      const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "catmullrom", 0.4);
+      const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "centripetal");
+      const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "centripetal");
 
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
       scene.add(supplyScene.world);
