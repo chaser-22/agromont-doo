@@ -1156,6 +1156,16 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   packerWindow.position.set(3.01, 1.02, 1.95);
   sorting.add(packerWindow);
 
+  const graderFallbackObjects = [
+    grader,
+    scannerArch,
+    packer,
+    packerTop,
+    controlBox,
+    statusLamp,
+    packerWindow,
+  ];
+
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);
   palletA.position.set(4.25, 0, 0.6);
   sorting.add(palletA);
@@ -1335,6 +1345,16 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   return {
     world,
     materials,
+    heroSlots: {
+      truck: {
+        anchor: truck,
+        fallbackObjects: [truck],
+      },
+      grader: {
+        anchor: grader,
+        fallbackObjects: graderFallbackObjects,
+      },
+    },
     update,
     dispose,
   };
