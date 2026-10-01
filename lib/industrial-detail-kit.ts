@@ -681,6 +681,30 @@ export function createDetailedTruck(
   trailerRails.instanceMatrix.needsUpdate = true;
   group.add(trailerRails);
 
+  const roofFairingShape = new THREE.Shape();
+  roofFairingShape.moveTo(-1.48, 2.62);
+  roofFairingShape.lineTo(-0.88, 3.13);
+  roofFairingShape.lineTo(-0.12, 3.13);
+  roofFairingShape.lineTo(-0.12, 2.62);
+  roofFairingShape.closePath();
+  const fairingGeo = new THREE.ExtrudeGeometry(roofFairingShape, {
+    depth: 1.98,
+    bevelEnabled: true,
+    bevelSegments: 1,
+    bevelSize: 0.025,
+    bevelThickness: 0.025,
+    steps: 1,
+  });
+  fairingGeo.translate(0, 0, -0.99);
+  const roofFairing = new THREE.Mesh(fairingGeo, materials.offWhite);
+  group.add(roofFairing);
+
+  for (const z of [-0.96, 0.96]) {
+    const underrun = new THREE.Mesh(new THREE.BoxGeometry(4.55, 0.12, 0.08), materials.galvanized);
+    underrun.position.set(1.20, 0.62, z);
+    group.add(underrun);
+  }
+
   if (!options.lowPower) {
     const ribGeo = new THREE.BoxGeometry(0.035, 2.15, 2.30);
     const ribs = new THREE.InstancedMesh(ribGeo, materials.darkMetal, 7);
@@ -715,7 +739,7 @@ export function createDetailedTruck(
   });
   cabGeometry.translate(0, 0, -1.04);
   cabGeometry.computeVertexNormals();
-  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.green), options.shadows);
+  const cab = addShadow(new THREE.Mesh(cabGeometry, materials.offWhite), options.shadows);
   group.add(cab);
 
   const windscreen = new THREE.Mesh(new THREE.BoxGeometry(0.055, 0.82, 1.70), materials.glass);
@@ -729,7 +753,7 @@ export function createDetailedTruck(
   group.add(windscreenDivider);
 
   const cabRoof = addShadow(
-    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.green),
+    new THREE.Mesh(new THREE.BoxGeometry(1.58, 0.13, 2.20), materials.offWhite),
     options.shadows,
   );
   cabRoof.position.set(-2.10, 2.73, 0);
@@ -740,7 +764,12 @@ export function createDetailedTruck(
   sunVisor.rotation.z = -0.16;
   group.add(sunVisor);
 
-  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.green);
+  const windowSurround = new THREE.Mesh(new THREE.BoxGeometry(0.055, 1.10, 1.94), materials.darkMetal);
+  windowSurround.position.set(-3.055, 2.00, 0);
+  windowSurround.rotation.z = -0.275;
+  group.add(windowSurround);
+
+  const lowerValance = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.24, 1.94), materials.offWhite);
   lowerValance.position.set(-3.37, 0.93, 0);
   lowerValance.rotation.z = -0.10;
   group.add(lowerValance);
