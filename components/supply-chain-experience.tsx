@@ -143,19 +143,20 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         renderer.shadowMap.autoUpdate = false;
         renderer.shadowMap.needsUpdate = true;
       }
-      renderer.setClearColor(0x536258, 1);
+      renderer.setClearColor(0x7f8c86, 1);
 
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x536258);
-      scene.fog = new THREE.FogExp2(0x59665c, mobile ? 0.0145 : 0.0108);
+      scene.background = new THREE.Color(0x7f8c86);
+      scene.fog = new THREE.FogExp2(0x8f9991, mobile ? 0.0118 : 0.0088);
 
       let environmentTarget: any = null;
       try {
         const { RoomEnvironment } = await import("three/addons/environments/RoomEnvironment.js");
         const pmremGenerator = new THREE.PMREMGenerator(renderer);
         const environmentScene = new RoomEnvironment();
-        environmentTarget = pmremGenerator.fromScene(environmentScene, 0.045);
+        environmentTarget = pmremGenerator.fromScene(environmentScene, 0.055);
         scene.environment = environmentTarget.texture;
+        scene.environmentIntensity = mobile ? 0.52 : 0.62;
         environmentScene.dispose();
         pmremGenerator.dispose();
       } catch {
@@ -200,11 +201,11 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
       scene.add(supplyScene.world);
 
-      const hemi = new THREE.HemisphereLight(0xdce3d8, 0x283229, mobile ? 1.05 : 1.25);
+      const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffd79d, mobile ? 2.4 : 3.65);
-      sun.position.set(-16, 19, 11);
+      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : 3.05);
+      sun.position.set(-15, 20, 10);
       sun.target.position.set(2, 0.8, 0);
       sun.castShadow = !mobile;
       if (!mobile) {
@@ -220,19 +221,19 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       }
       scene.add(sun, sun.target);
 
-      const coolFill = new THREE.DirectionalLight(0x8ca89c, mobile ? 0.55 : 0.72);
+      const coolFill = new THREE.DirectionalLight(0xa9bcc3, mobile ? 0.28 : 0.36);
       coolFill.position.set(21, 11, -16);
       scene.add(coolFill);
 
-      const warmBounce = new THREE.DirectionalLight(0xc78d5e, mobile ? 0.28 : 0.42);
+      const warmBounce = new THREE.DirectionalLight(0xd2a477, mobile ? 0.16 : 0.24);
       warmBounce.position.set(-8, 4, 18);
       scene.add(warmBounce);
 
-      const processLight = new THREE.PointLight(0xf0a128, mobile ? 3.4 : 5.8, 17, 2);
+      const processLight = new THREE.PointLight(0xf0a128, mobile ? 2.6 : 4.2, 15, 2);
       processLight.position.set(2.0, 4.8, 1.5);
       scene.add(processLight);
 
-      const gradingLight = new THREE.SpotLight(0xffd8a4, mobile ? 4.8 : 7.5, 21, Math.PI / 6.3, 0.6, 1.45);
+      const gradingLight = new THREE.SpotLight(0xffddb1, mobile ? 3.2 : 5.2, 19, Math.PI / 6.0, 0.66, 1.5);
       gradingLight.position.set(14.6, 6.7, 15.2);
       gradingLight.target.position.set(14.8, 1.0, 13.05);
       scene.add(gradingLight, gradingLight.target);
@@ -313,12 +314,11 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           camera.updateProjectionMatrix();
         }
 
-        const daylight = 0.96 + Math.sin(cameraProgress * Math.PI) * 0.065;
+        const daylight = 0.98 + Math.sin(cameraProgress * Math.PI) * 0.035;
         renderer.toneMappingExposure = daylight;
-        processLight.intensity = (mobile ? 3.2 : 5.5) + Math.sin(elapsed * 0.72) * 0.24;
-        gradingLight.intensity = (mobile ? 4.6 : 7.2) + Math.sin(elapsed * 0.55) * 0.18;
-        sun.position.x = -16 + cameraProgress * 8.5;
-        if (scene.fog) scene.fog.density = (mobile ? 0.0145 : 0.0108) + cameraProgress * 0.0008;
+        processLight.intensity = (mobile ? 2.5 : 4.1) + Math.sin(elapsed * 0.72) * 0.14;
+        gradingLight.intensity = (mobile ? 3.1 : 5.0) + Math.sin(elapsed * 0.55) * 0.12;
+        if (scene.fog) scene.fog.density = (mobile ? 0.0118 : 0.0088) + cameraProgress * 0.00045;
 
         supplyScene.update(elapsed, cameraProgress);
         renderer.render(scene, camera);
