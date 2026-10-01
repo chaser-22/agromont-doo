@@ -429,13 +429,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               "/models/luton-box-cc0.glb",
               "https://cdn.3dassets.dev/assets/32539/v1/model.glb",
               supplyScene.heroSlots.truck,
-              { preRotateY: -Math.PI / 2, scale: 1.03 },
-            ),
-            installHero(
-              "/models/grader-scanner-cc0.glb",
-              "https://cdn.3dassets.dev/assets/34789/v1/model.glb",
-              supplyScene.heroSlots.scanner,
-              { preRotateY: Math.PI / 2, scale: 0.72 },
+              { preRotateY: Math.PI / 2, scale: 1.03 },
             ),
           ]);
         } catch {
