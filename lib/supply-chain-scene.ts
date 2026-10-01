@@ -13,7 +13,8 @@ import {
   createUltraEggGrader,
   createUltraProcessSkid,
 } from "@/lib/ultra-hero-assets";
-import { loadHeroGlb, type HeroAssetQuality } from "@/lib/hero-glb-assets";
+import type { HeroAssetQuality } from "@/lib/hero-glb-assets";
+import type { AuthoredHeroSlots } from "@/lib/blender-hero-loader";
 
 export type SupplySceneOptions = {
   mobile: boolean;
@@ -230,7 +231,6 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const shadows = !mobile;
   const detailOptions = { mobile, lowPower, shadows };
   const useUltraAssets = !mobile && !lowPower;
-  const assetQuality: HeroAssetQuality = options.assetQuality ?? (useUltraAssets ? "high" : "fallback");
   const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower);
 
   const materials = {
@@ -430,6 +430,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
 
   const world = new THREE.Group();
   world.name = "AgromontSupplySystemRealistic";
+  const authoredHeroSlots: AuthoredHeroSlots = {};
 
   const sky = createSkyDome(THREE);
   world.add(sky);
@@ -884,7 +885,6 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
   }
 
-  let ultraProcessSkid: any = null;
   if (useUltraAssets) {
     dustCollector.visible = false;
     loadOut.visible = false;
@@ -892,9 +892,17 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       vessel.visible = false;
     });
 
-    ultraProcessSkid = createUltraProcessSkid(THREE, materials, detailOptions);
-    ultraProcessSkid.position.set(0.05, 0, 0.15);
-    feedMill.add(ultraProcessSkid);
+    const processSkidMount = new THREE.Group();
+    processSkidMount.name = "ProcessSkidHeroMount";
+    processSkidMount.position.set(0.05, 0, 0.15);
+    feedMill.add(processSkidMount);
+
+    const ultraProcessSkid = createUltraProcessSkid(THREE, materials, detailOptions);
+    processSkidMount.add(ultraProcessSkid);
+    authoredHeroSlots.processSkid = {
+      mount: processSkidMount,
+      fallback: ultraProcessSkid,
+    };
   }
 
   const pelletGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8);
@@ -1154,7 +1162,6 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   sorting.add(packerWindow);
 
   let animatedEggs = eggs;
-  let ultraGrader: any = null;
   if (useUltraAssets) {
     grader.visible = false;
     scannerArch.visible = false;
@@ -1164,50 +1171,19 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     statusLamp.visible = false;
     packerWindow.visible = false;
 
-    ultraGrader = createUltraEggGrader(THREE, materials, detailOptions);
-    ultraGrader.position.set(-0.05, 0, 3.05);
-    sorting.add(ultraGrader);
+    const graderMount = new THREE.Group();
+    graderMount.name = "EggGraderHeroMount";
+    graderMount.position.set(-0.05, 0, 3.05);
+    sorting.add(graderMount);
+
+    const ultraGrader = createUltraEggGrader(THREE, materials, detailOptions);
+    graderMount.add(ultraGrader);
+    authoredHeroSlots.grader = {
+      mount: graderMount,
+      fallback: ultraGrader,
+    };
     animatedEggs = ultraGrader.userData.eggs ?? eggs;
   }
-
-  const heroAssetLoads: Promise<void>[] = [];
-  if (assetQuality !== "fallback") {
-    heroAssetLoads.push(
-      loadHeroGlb("process", assetQuality, shadows)
-        .then((model) => {
-          model.position.set(0.05, 0, 0.15);
-          feedMill.add(model);
-          if (ultraProcessSkid) ultraProcessSkid.visible = false;
-        })
-        .catch(() => {
-          // The procedural ultra process equipment remains as the resilient fallback.
-        }),
-    );
-
-    heroAssetLoads.push(
-      loadHeroGlb("grader", assetQuality, shadows)
-        .then((model) => {
-          model.position.set(-0.05, 0, 3.05);
-          sorting.add(model);
-          if (ultraGrader) {
-            ultraGrader.visible = false;
-          } else {
-            grader.visible = false;
-            scannerArch.visible = false;
-            packer.visible = false;
-            packerTop.visible = false;
-            controlBox.visible = false;
-            statusLamp.visible = false;
-            packerWindow.visible = false;
-          }
-        })
-        .catch(() => {
-          // The existing grader stays visible if the authored asset cannot load.
-        }),
-    );
-  }
-
-  const ready = Promise.all(heroAssetLoads).then(() => undefined);
 
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);
   palletA.position.set(4.25, 0, 0.6);
@@ -1238,10 +1214,20 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     logistics.add(post);
   }
 
+  const truckMount = new THREE.Group();
+  truckMount.name = "TruckHeroMount";
+  truckMount.position.set(0.45, 0, 0.1);
+  truckMount.rotation.y = Math.PI;
+  logistics.add(truckMount);
+
   const truck = createDetailedTruck(THREE, materials, detailOptions);
-  truck.position.set(0.45, 0, 0.1);
-  truck.rotation.y = Math.PI;
-  logistics.add(truck);
+  truckMount.add(truck);
+  if (useUltraAssets) {
+    authoredHeroSlots.truck = {
+      mount: truckMount,
+      fallback: truck,
+    };
+  }
 
   const truckSignTexture = createSignTexture(THREE, ["AGROMONT", "DISTRIBUCIJA"], {
     accent: "#e89a28",
@@ -1388,7 +1374,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   return {
     world,
     materials,
-    ready,
+    authoredHeroSlots,
     update,
     dispose,
   };

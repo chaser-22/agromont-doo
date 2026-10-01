@@ -143,14 +143,31 @@ for (const profile of profiles) {
   console.log(`[qa] loading ${profile.name}`);
   await page.goto(`${baseUrl}/qa-3d`, { waitUntil: "networkidle", timeout: 60_000 });
 
-  await page.waitForFunction(
-    () => {
-      const qa = window.__AGROMONT_3D_QA__;
-      return Boolean(qa?.ready && qa.snapshot?.().ready);
-    },
-    undefined,
-    { timeout: 35_000 },
-  );
+  try {
+    await page.waitForFunction(
+      () => {
+        const qa = window.__AGROMONT_3D_QA__;
+        return Boolean(qa?.ready && qa.snapshot?.().ready);
+      },
+      undefined,
+      { timeout: 120_000 },
+    );
+  } catch (error) {
+    const qaSnapshot = await page.evaluate(() => {
+      try {
+        return window.__AGROMONT_3D_QA__?.snapshot?.() ?? null;
+      } catch (snapshotError) {
+        return { snapshotError: String(snapshotError) };
+      }
+    });
+    console.error("[qa] readiness timeout", {
+      profile: profile.name,
+      qaSnapshot,
+      consoleErrors,
+      pageErrors,
+    });
+    throw error;
+  }
 
   const milestoneSnapshots = Array(milestones.length).fill(null);
   const capturedFrameFiles = Array(milestones.length).fill(null);
@@ -229,6 +246,23 @@ for (const profile of profiles) {
         }
         if (!Number.isFinite(snapshot.renderer?.triangles) || snapshot.renderer.triangles <= 100) {
           report.failures.push(`${profile.name}: suspiciously low triangle count at progress ${progress}`);
+        }
+
+        if (!profile.isMobile) {
+          const authored = snapshot.authoredAssets;
+          if (!authored?.ready) {
+            report.failures.push(`${profile.name}: authored hero assets were not ready at progress ${progress}`);
+          }
+          if ((authored?.loaded?.length ?? 0) !== 2) {
+            report.failures.push(
+              `${profile.name}: expected 2 approved authored hero assets, got ${authored?.loaded?.length ?? 0} at progress ${progress}`,
+            );
+          }
+          if ((authored?.failed?.length ?? 0) > 0) {
+            report.failures.push(
+              `${profile.name}: authored hero asset failures: ${authored.failed.join(", ")}`,
+            );
+          }
         }
       }
 

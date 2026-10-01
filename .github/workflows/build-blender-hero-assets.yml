@@ -1,0 +1,143 @@
+name: Build Blender hero assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/blender-pbr-hero-assets
+    paths:
+      - "tools/blender/**"
+      - ".github/workflows/build-blender-hero-assets.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: blender-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download Blender 5.2 LTS
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 4 --retry-delay 3 \
+            -o /tmp/blender.tar.xz \
+            https://download.blender.org/release/Blender5.2/blender-5.2.2-linux-x64.tar.xz
+          tar -xf /tmp/blender.tar.xz -C /tmp
+          /tmp/blender-5.2.2-linux-x64/blender --version
+
+      - name: Generate authored Blender assets and PBR atlases
+        env:
+          AGROMONT_ASSET_OUT: ${{ github.workspace }}/.hero-build
+        run: |
+          set -euxo pipefail
+          /tmp/blender-5.2.2-linux-x64/blender \
+            --background \
+            --python tools/blender/generate_hero_assets.py
+          test -f .hero-build/raw/truck-lod0.glb
+          test -f .hero-build/raw/grader-lod0.glb
+          test -f .hero-build/raw/process-skid-lod0.glb
+
+      - name: Install glTF optimization toolchain
+        run: npm install --global @gltf-transform/cli@latest
+
+      - name: Install Khronos KTX-Software
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 4 --retry-delay 2 \
+            -o /tmp/ktx.deb \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          sudo dpkg -i /tmp/ktx.deb
+          command -v ktx
+          ktx --version
+
+      - name: Meshopt and KTX2 package hero LODs
+        run: |
+          set -euxo pipefail
+          mkdir -p public/assets/hero .hero-build/reports
+          shopt -s nullglob
+          sources=(.hero-build/raw/*.glb)
+          test "${#sources[@]}" -eq 9
+          for source in "${sources[@]}"; do
+            base="$(basename "$source" .glb)"
+            t1="/tmp/${base}-dedup.glb"
+            t1p="/tmp/${base}-pruned.glb"
+            t2="/tmp/${base}-meshopt.glb"
+            t3="/tmp/${base}-uastc.glb"
+            out="public/assets/hero/${base}.glb"
+
+            gltf-transform dedup "$source" "$t1"
+            gltf-transform prune "$t1" "$t1p"
+            gltf-transform meshopt "$t1p" "$t2" --level medium
+            gltf-transform uastc "$t2" "$t3" \
+              --slots "{normalTexture,occlusionTexture,metallicRoughnessTexture}" \
+              --level 2 --zstd 10
+            gltf-transform etc1s "$t3" "$out" \
+              --quality 220
+            gltf-transform inspect "$out" > ".hero-build/reports/${base}.txt"
+          done
+
+      - name: Build asset manifest
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'public/assets/hero';
+          const files = fs.readdirSync(dir).filter(f => f.endsWith('.glb')).sort();
+          const assets = files.map(file => ({
+            file,
+            bytes: fs.statSync(path.join(dir,file)).size,
+            url: '/assets/hero/' + file
+          }));
+          fs.writeFileSync(path.join(dir,'manifest.json'), JSON.stringify({
+            generatedFrom: process.env.GITHUB_SHA,
+            blender: '5.2.2 LTS',
+            compression: ['EXT_meshopt_compression','KHR_texture_basisu'],
+            assets
+          }, null, 2));
+          console.log(JSON.stringify(assets, null, 2));
+          NODE
+
+      - name: Stage self-contained Blender source assets
+        run: |
+          set -euxo pipefail
+          mkdir -p assets/blender
+          cp .hero-build/source/*.blend assets/blender/
+
+      - name: Commit production assets to branch
+        if: github.event_name == 'push'
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/hero assets/blender
+          if git diff --cached --quiet; then
+            echo "No generated asset changes."
+          else
+            git commit -m "Add baked Blender hero assets"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload production hero assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: agromont-blender-hero-assets
+          path: |
+            public/assets/hero/
+            .hero-build/source/
+            .hero-build/textures/
+            .hero-build/reports/
+          if-no-files-found: error
+          retention-days: 14
+          compression-level: 0

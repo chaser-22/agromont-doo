@@ -236,13 +236,6 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, assetQuality });
       scene.add(supplyScene.world);
-      await supplyScene.ready;
-      if (cancelled) {
-        supplyScene.dispose();
-        environmentTarget?.dispose?.();
-        renderer.dispose?.();
-        return;
-      }
 
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
       scene.add(hemi);
@@ -296,6 +289,12 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       let perfWindowStart = 0;
       let perfFrames = 0;
       let latestFps = 0;
+      let authoredAssetHandle: any = null;
+      let authoredAssetState = {
+        ready: false,
+        loaded: [] as string[],
+        failed: [] as string[],
+      };
       const clock = new THREE.Clock();
       const cameraPosition = new THREE.Vector3();
       const targetPosition = new THREE.Vector3();
@@ -417,6 +416,41 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         targetPointerY = -(event.clientY / Math.max(window.innerHeight, 1) - 0.5) * 2;
       };
 
+      const loadAuthoredAssets = async () => {
+        try {
+          const { installAuthoredHeroAssets } = await import("@/lib/blender-hero-loader");
+          const handle = await installAuthoredHeroAssets(
+            THREE,
+            renderer,
+            supplyScene.authoredHeroSlots,
+            { mobile, lowPower, shadows: !mobile },
+          );
+
+          if (cancelled) {
+            handle.dispose();
+            return;
+          }
+
+          authoredAssetHandle = handle;
+          authoredAssetState = {
+            ready: true,
+            loaded: handle.loaded,
+            failed: handle.failed,
+          };
+        } catch (error) {
+          console.warn("[agromont] authored hero assets unavailable; keeping fallbacks", error);
+          authoredAssetState = {
+            ready: true,
+            loaded: [],
+            failed: ["asset-loader"],
+          };
+        }
+
+        ensureFrame();
+      };
+
+      void loadAuthoredAssets();
+
       const qaWindow = window as any;
       let gpuInfo = { vendor: "unknown", renderer: "unknown" };
       try {
@@ -443,7 +477,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           },
           snapshot() {
             return {
-              ready: markedReady,
+              ready: markedReady && authoredAssetState.ready,
               failed: contextLost,
               progress,
               stage: resolveStage(progress) + 1,
@@ -471,6 +505,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
                 textures: renderer.info.memory.textures,
               },
               gpu: { ...gpuInfo, backend: webGPUActive ? "webgpu" : "webgl2" },
+              authoredAssets: authoredAssetState,
               timestamp: performance.now(),
             };
           },
@@ -517,6 +552,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         document.removeEventListener("visibilitychange", onVisibility);
         if (raf) cancelAnimationFrame(raf);
         canvas.removeEventListener("webglcontextlost", onContextLost);
+        authoredAssetHandle?.dispose?.();
         supplyScene.dispose();
         environmentTarget?.dispose?.();
         renderer.dispose();
