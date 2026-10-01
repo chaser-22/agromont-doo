@@ -81,61 +81,144 @@ async function write(scene,file){
 
 function buildTruck(){
   const p=collection();
-  box(p,'dark',[6.7,.22,1.86],[.35,.67,0]);
-  box(p,'white',[5.28,2.30,2.22],[1.28,1.88,0]);
-  extrudedProfile(p,'white',[[-3.72,.68],[-3.65,1.18],[-3.36,1.55],[-3.12,2.48],[-2.78,2.78],[-1.36,2.78],[-1.18,2.50],[-1.13,.68]],2.10);
-  extrudedProfile(p,'white',[[-1.48,2.70],[-1.02,3.18],[-.12,3.18],[-.12,2.70]],2.0);
-  box(p,'dark',[.20,.22,2.08],[-3.76,.72,0]); box(p,'dark',[.06,.48,1.22],[-3.64,1.08,0]);
-  box(p,'glass',[.05,.84,1.76],[-3.18,2.06,0],[0,0,-.27]);
-  box(p,'dark',[.05,.05,1.84],[-3.14,2.47,0],[0,0,-.27]); box(p,'dark',[.05,.05,1.84],[-3.34,1.70,0],[0,0,-.27]);
-  for(const z of [-1.065,1.065]){
-    box(p,'glass',[.92,.66,.035],[-2.18,2.06,z]); box(p,'dark',[.22,.04,.035],[-1.73,1.72,z*1.01]);
-    box(p,'dark',[.10,.52,.05],[-2.76,2.12,z*1.35]); box(p,'glass',[.08,.34,.24],[-2.76,2.21,z*1.46]);
-    box(p,'galv',[.78,.10,.24],[-1.58,.72,z*1.08]); box(p,'galv',[4.55,.10,.08],[1.22,.60,z*.92]);
+
+  // Medium-duty European 4x2 rigid proportions: forward-control day cab,
+  // two axles, long box body, clean cab/body gap and low chassis.
+  box(p,'dark',[7.15,.20,1.82],[.10,.66,0]);
+  box(p,'white',[4.95,2.42,2.28],[1.20,1.88,0]);
+
+  extrudedProfile(
+    p,'white',
+    [[-3.62,.70],[-3.57,1.13],[-3.40,1.48],[-3.23,2.38],[-2.92,2.72],[-1.48,2.72],[-1.25,2.50],[-1.18,.70]],
+    2.16,
+  );
+  extrudedProfile(
+    p,'white',
+    [[-1.48,2.64],[-1.08,3.12],[-.42,3.12],[-.12,2.96],[-.12,2.64]],
+    2.04,
+  );
+
+  // Cab glazing and black surround visually separate the greenhouse from bodywork.
+  box(p,'dark',[.045,.98,1.92],[-3.22,2.02,0],[0,0,-.235]);
+  box(p,'glass',[.055,.84,1.78],[-3.245,2.03,0],[0,0,-.235]);
+  box(p,'dark',[.05,.86,.04],[-3.28,2.03,0],[0,0,-.235]);
+  for(const z of [-1.085,1.085]){
+    box(p,'dark',[1.10,.82,.055],[-2.24,2.05,z]);
+    box(p,'glass',[.96,.69,.036],[-2.24,2.06,z*1.006]);
+    box(p,'dark',[.22,.045,.035],[-1.72,1.70,z*1.012]);
+    box(p,'dark',[.10,.54,.05],[-2.78,2.10,z*1.34]);
+    box(p,'glass',[.085,.34,.24],[-2.78,2.20,z*1.45]);
+    box(p,'galv',[.78,.10,.23],[-1.56,.71,z*1.09]);
   }
-  for(let y=.92;y<=1.29;y+=.075) box(p,'galv',[.035,.025,1.02],[-3.675,y,0]);
-  for(let x=-.9;x<=3.4;x+=.61) box(p,'galv',[.028,2.16,2.27],[x,1.89,0]);
-  for(const y of [.76,3.04]) for(const z of [-1.14,1.14]) box(p,'galv',[5.36,.07,.05],[1.28,y,z]);
-  box(p,'dark',[.16,.20,2.18],[3.98,.64,0]);
-  for(const x of [-2.36,.25,2.55]) for(const z of [-1.10,1.10]){
-    cyl(p,'rubber',.47,.30,[x,.47,z],[Math.PI/2,0,0],48); cyl(p,'galv',.19,.32,[x,.47,z*1.015],[Math.PI/2,0,0],28);
-    for(let i=0;i<16;i++){const a=i/16*Math.PI*2; box(p,'rubber',[.115,.035,.34],[x+Math.cos(a)*.455,.47+Math.sin(a)*.455,z],[0,0,a+Math.PI/2]);}
+
+  // Front fascia: black bumper, grille, inset light clusters and subtle slats.
+  box(p,'dark',[.22,.24,2.12],[-3.66,.73,0]);
+  box(p,'dark',[.065,.56,1.30],[-3.57,1.08,0]);
+  for(let y=.88;y<=1.30;y+=.07) box(p,'galv',[.035,.022,1.12],[-3.61,y,0]);
+  for(const z of [-.73,.73]){
+    box(p,'amber',[.07,.17,.31],[-3.64,1.37,z]);
+    box(p,'white',[.08,.11,.33],[-3.65,1.18,z]);
   }
-  for(const x of [.25,2.55]) for(const z of [-1.02,1.02]) box(p,'rubber',[.08,.62,.32],[x+.42,.40,z]);
-  for(const z of [-.90,.90]) cyl(p,'galv',.26,1.16,[-.76,.88,z],[0,Math.PI/2,0],24);
-  cyl(p,'dark',.07,1.55,[-1.33,2.0,.92],[0,0,0],14);
-  for(const z of [-.72,.72]){box(p,'amber',[.06,.17,.28],[-3.72,1.34,z]); box(p,'red',[.07,.15,.22],[4.02,.83,z]);}
-  box(p,'green',[.035,.58,2.20],[1.65,2.00,1.135]);
+
+  // Two-axle 4x2 running gear, closer to DAF LF / Iveco Eurocargo proportions.
+  const axles=[-2.42,2.05];
+  for(const x of axles) for(const z of [-1.11,1.11]){
+    cyl(p,'rubber',.50,.31,[x,.50,z],[Math.PI/2,0,0],56);
+    cyl(p,'galv',.19,.33,[x,.50,z*1.012],[Math.PI/2,0,0],32);
+    for(let i=0;i<18;i++){
+      const a=i/18*Math.PI*2;
+      box(p,'rubber',[.12,.034,.35],[x+Math.cos(a)*.485,.50+Math.sin(a)*.485,z],[0,0,a+Math.PI/2]);
+    }
+  }
+
+  // Proper wheel arches/fenders and chassis equipment.
+  for(const x of axles) for(const z of [-1.09,1.09]){
+    add(p,'dark',new THREE.TorusGeometry(.585,.055,8,30,Math.PI),[x,.54,z],[0,0,0]);
+  }
+  for(const z of [-.91,.91]) cyl(p,'galv',.27,1.22,[-.63,.86,z],[0,Math.PI/2,0],28);
+  box(p,'dark',[1.25,.22,.72],[-.45,.67,0]);
+  for(const z of [-.97,.97]) box(p,'galv',[3.95,.09,.075],[1.16,.59,z]);
+
+  // Box-body construction: aluminium rails, vertical posts, marker lights and tail lift.
+  for(let x=-.92;x<=3.48;x+=.55) box(p,'galv',[.026,2.24,2.30],[x,1.88,0]);
+  for(const y of [.70,3.08]) for(const z of [-1.155,1.155]) box(p,'galv',[5.06,.065,.05],[1.20,y,z]);
+  for(const x of [-.45,.65,1.75,2.85]) for(const z of [-1.18,1.18]) box(p,'amber',[.09,.08,.045],[x,.82,z]);
+  box(p,'dark',[.16,2.32,2.18],[3.72,1.84,0]);
+  box(p,'galv',[.11,1.95,2.02],[3.80,1.55,0]);
+  for(const z of [-.76,.76]) box(p,'red',[.08,.16,.24],[3.88,.76,z]);
+
+  // Commercial finishing details.
+  cyl(p,'dark',.07,1.55,[-1.30,1.98,.92],[0,0,0],16);
+  for(const z of [-.43,.43]) box(p,'dark',[.48,.018,.022],[-3.30,1.88,z],[0,0,-.08]);
+  box(p,'green',[.035,.58,2.20],[1.25,2.00,1.155]);
+
   return sceneFrom(p,'AGROMONT Ultra Logistics Truck');
 }
-
 function eggGeometry(){
   return new THREE.LatheGeometry([
     new THREE.Vector2(0,-.58),new THREE.Vector2(.22,-.53),new THREE.Vector2(.36,-.29),new THREE.Vector2(.405,.02),new THREE.Vector2(.33,.31),new THREE.Vector2(.18,.50),new THREE.Vector2(0,.62)
   ],40);
 }
 function buildGrader(){
-  const p=collection(), L=8.8, rows=6, z0=3.05;
-  for(const z of [-.82,.82]) for(const y of [.58,1.46]) box(p,'stainless',[L,.08,.08],[0,y,z0+z]);
-  for(let x=-4.15;x<=4.16;x+=1.38) for(const z of [-.78,.78]) box(p,'stainless',[.09,1.15,.09],[x,.58,z0+z]);
-  for(let r=0;r<rows;r++){
-    const z=z0+(r-(rows-1)/2)*.245; box(p,'dark',[8.3,.055,.10],[-.05,1.18,z]);
-    for(let x=-4.0;x<=3.86;x+=.31) cyl(p,'stainless',.052,.17,[x,1.22,z],[Math.PI/2,0,0],12);
+  const p=collection();
+  const L=8.9, tracks=6, z0=3.05;
+
+  // Open hygienic stainless base structure.
+  for(const z of [-.88,.88]) for(const y of [.55,1.38]) box(p,'stainless',[L,.075,.075],[0,y,z0+z]);
+  for(let x=-4.18;x<=4.2;x+=1.18) for(const z of [-.84,.84]){
+    box(p,'stainless',[.085,1.12,.085],[x,.57,z0+z]);
+    box(p,'stainless',[.26,.055,.22],[x,.06,z0+z]);
   }
+
+  // Six independent carrier tracks with dark chain rails and compact cup pairs.
+  for(let r=0;r<tracks;r++){
+    const z=z0+(r-(tracks-1)/2)*.245;
+    box(p,'dark',[8.34,.05,.07],[-.04,1.13,z-.035]);
+    box(p,'dark',[8.34,.05,.07],[-.04,1.13,z+.035]);
+    for(let x=-4.02;x<=3.94;x+=.34){
+      cyl(p,'stainless',.045,.13,[x,1.18,z-.055],[Math.PI/2,0,0],14);
+      cyl(p,'stainless',.045,.13,[x,1.18,z+.055],[Math.PI/2,0,0],14);
+    }
+  }
+
   const egg=eggGeometry();
-  for(let i=0;i<24;i++){const x=-3.8+i*(6.9/23),z=z0+((i%rows)-(rows-1)/2)*.245; add(p,'egg',egg,[x,1.48,z],[0,0,(i%3-.8)*.03],[.265,.265,.265]);}
-  box(p,'stainless',[1.18,.12,1.78],[-3.75,1.10,z0]); box(p,'stainless',[.78,.44,1.78],[-3.95,1.68,z0]);
-  for(let x=-4.15;x<=-3.32;x+=.16) cyl(p,'dark',.06,1.62,[x,1.30,z0],[Math.PI/2,0,0],14);
-  box(p,'stainless',[1.30,.20,1.90],[-.55,1.95,z0]); box(p,'glass',[1.05,.34,.035],[-.55,1.75,z0+.965]);
-  for(const z of [-.62,-.31,0,.31,.62]) box(p,'amber',[.12,.045,.08],[-.55,1.73,z0+z]);
-  for(let lane=0;lane<6;lane++){
-    const z=z0-1.35+lane*.54; box(p,'stainless',[2.45,.09,.26],[3.05,.96,z]); box(p,'dark',[2.30,.04,.04],[3.05,1.22,z+.12]);
-    box(p,'white',[.38,.42,.34],[4.10,1.18,z]); if(lane%2===0) box(p,'carton',[.42,.13,.32],[3.45,1.12,z]);
+  for(let i=0;i<26;i++){
+    const x=-3.88+i*(7.15/25);
+    const z=z0+((i%tracks)-(tracks-1)/2)*.245;
+    add(p,'egg',egg,[x,1.43,z],[0,0,(i%3-1)*.025],[.25,.25,.25]);
   }
-  cyl(p,'dark',.25,.62,[4.26,.88,z0+.96],[0,Math.PI/2,0],24); box(p,'dark',[.58,.52,.48],[3.92,.88,z0+.96]);
+
+  // Foam-cleanable open infeed: dense roller bank but no bulky enclosure.
+  for(let x=-4.20;x<=-3.18;x+=.13) cyl(p,'stainless',.052,1.72,[x,1.18,z0],[Math.PI/2,0,0],16);
+  box(p,'stainless',[1.18,.10,1.90],[-3.68,.66,z0]);
+
+  // Long modular grader spine like real Omnia-family machinery, kept shallow
+  // so the camera can still read individual egg handling below it.
+  box(p,'white',[6.35,.30,.48],[-.10,1.82,z0-.79]);
+  box(p,'green',[6.20,.075,.50],[-.10,1.72,z0-.80]);
+  for(let x=-2.95;x<=2.75;x+=.95) box(p,'dark',[.045,.26,.51],[x,1.83,z0-.80]);
+
+  // Inspection module with glass face, sensor heads, and a side control console.
+  box(p,'stainless',[1.20,.20,1.82],[-.62,1.90,z0]);
+  box(p,'glass',[.95,.32,.035],[-.62,1.75,z0+.925]);
+  for(const z of [-.62,-.31,0,.31,.62]) box(p,'amber',[.10,.04,.075],[-.62,1.72,z0+z]);
+  box(p,'dark',[.62,1.05,.46],[.45,1.28,z0+1.18]);
+  box(p,'glass',[.48,.38,.025],[.45,1.48,z0+1.42],[0.10,0,0]);
+
+  // Six packing branches with removable-looking terminal modules and cartons.
+  for(let lane=0;lane<6;lane++){
+    const z=z0-1.47+lane*.59;
+    box(p,'stainless',[2.60,.085,.24],[3.02,.92,z]);
+    box(p,'dark',[2.42,.035,.035],[3.02,1.17,z+.11]);
+    box(p,'white',[.44,.44,.34],[4.10,1.16,z]);
+    if(lane%2===0) box(p,'carton',[.46,.13,.34],[3.52,1.09,z]);
+  }
+
+  cyl(p,'dark',.25,.60,[4.28,.84,z0+.98],[0,Math.PI/2,0],28);
+  box(p,'dark',[.58,.50,.46],[3.94,.84,z0+.98]);
+
   return sceneFrom(p,'AGROMONT Ultra Egg Grader');
 }
-
 function buildFeedProcess(){
   const p=collection();
   for(const x of [-2.2,0,2.2]) for(const z of [-.95,.95]) box(p,'galv',[.13,5.8,.13],[x,2.9,z]);
