@@ -268,7 +268,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "centripetal");
       const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "centripetal");
 
-      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
+      const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, ultra: ultraRenderer });
       scene.add(supplyScene.world);
 
       const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
