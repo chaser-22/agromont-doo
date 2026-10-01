@@ -627,7 +627,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   // FARM CAMPUS — repeated halls, feed silos, fans and service infrastructure.
   // ---------------------------------------------------------------------------
   const farmCampus = new THREE.Group();
-  farmCampus.position.set(16.2, 0, -5.0);
+  farmCampus.position.set(16.2, 0, -6.7);
   world.add(farmCampus);
 
   const farmCount = lowPower ? 2 : 3;
@@ -678,7 +678,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   // SORTING / PACKING — roller line, scanner and palletised cartons.
   // ---------------------------------------------------------------------------
   const sorting = new THREE.Group();
-  sorting.position.set(14.6, 0, 7.0);
+  sorting.position.set(14.6, 0, 10.1);
   world.add(sorting);
 
   const sortingHall = addShadow(new THREE.Mesh(new THREE.BoxGeometry(10.6, 3.8, 5.2), materials.green), shadows);
