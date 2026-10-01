@@ -48,7 +48,7 @@ const stages = [
   },
 ] as const;
 
-const stageBreaks = [0.06, 0.19, 0.35, 0.51, 0.67, 0.83];
+const stageBreaks = [0.06, 0.19, 0.35, 0.55, 0.70, 0.86];
 
 function resolveStage(progress: number) {
   let current = 0;
@@ -134,7 +134,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
       const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
       const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
-      const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.76 : 0.78) : maxDpr;
+      const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.70 : 0.70) : maxDpr;
       let currentDpr = qaDpr;
       renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
@@ -169,8 +169,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             new THREE.Vector3(-21.0, 2.45, 8.6),
             new THREE.Vector3(-12.9, 4.55, 10.3),
             new THREE.Vector3(1.7, 6.0, 12.5),
-            new THREE.Vector3(24.6, 5.1, 13.6),
-            new THREE.Vector3(22.6, 3.85, 14.8),
+            new THREE.Vector3(24.2, 7.2, 15.2),
+            new THREE.Vector3(18.2, 4.4, 17.2),
             new THREE.Vector3(8.7, 4.8, 16.5),
             new THREE.Vector3(4.0, 18.3, 30.6),
           ]
@@ -178,8 +178,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             new THREE.Vector3(-21.4, 1.75, 6.5),
             new THREE.Vector3(-12.9, 3.45, 7.9),
             new THREE.Vector3(2.4, 4.85, 9.8),
-            new THREE.Vector3(24.1, 4.15, 10.9),
-            new THREE.Vector3(21.9, 2.85, 13.0),
+            new THREE.Vector3(23.8, 6.4, 13.0),
+            new THREE.Vector3(18.0, 4.0, 16.6),
             new THREE.Vector3(8.8, 3.2, 14.5),
             new THREE.Vector3(3.8, 19.6, 31.6),
           ];
@@ -189,7 +189,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         new THREE.Vector3(-6.3, 4.8, -4.0),
         new THREE.Vector3(1.3, 4.6, -2.15),
         new THREE.Vector3(16.2, 1.85, -1.1),
-        new THREE.Vector3(14.6, 1.35, 7.15),
+        new THREE.Vector3(14.6, 1.35, 13.05),
         new THREE.Vector3(3.1, 1.45, 7.15),
         new THREE.Vector3(2.0, 1.55, 0.0),
       ];
@@ -233,8 +233,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       scene.add(processLight);
 
       const gradingLight = new THREE.SpotLight(0xffd8a4, mobile ? 4.8 : 7.5, 21, Math.PI / 6.3, 0.6, 1.45);
-      gradingLight.position.set(14.6, 6.7, 9.6);
-      gradingLight.target.position.set(14.8, 1.0, 7.15);
+      gradingLight.position.set(14.6, 6.7, 15.2);
+      gradingLight.target.position.set(14.8, 1.0, 13.05);
       scene.add(gradingLight, gradingLight.target);
 
       let viewportWidth = 0;
@@ -296,8 +296,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         pointerY += (targetPointerY - pointerY) * 0.045;
 
         const cameraProgress = Math.min(1, Math.max(0, progress));
-        cameraCurve.getPointAt(cameraProgress, cameraPosition);
-        targetCurve.getPointAt(cameraProgress, targetPosition);
+        cameraCurve.getPoint(cameraProgress, cameraPosition);
+        targetCurve.getPoint(cameraProgress, targetPosition);
 
         if (!mobile) {
           cameraPosition.x += pointerX * 0.26;
