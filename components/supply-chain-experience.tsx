@@ -134,7 +134,8 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       renderer.transmissionResolutionScale = mobile ? 0.5 : 0.72;
       const maxDpr = Math.min(window.devicePixelRatio || 1, lowPower ? 0.76 : mobile ? 0.95 : 1.4);
       const minDpr = lowPower ? 0.62 : mobile ? 0.72 : 0.9;
-      let currentDpr = maxDpr;
+      const qaDpr = qaMode ? Math.min(maxDpr, mobile ? 0.76 : 0.78) : maxDpr;
+      let currentDpr = qaDpr;
       renderer.setPixelRatio(currentDpr);
       renderer.shadowMap.enabled = !mobile;
       if (!mobile) {
@@ -289,7 +290,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const draw = () => {
         resize();
-        const elapsed = reducedMotion ? 0 : clock.getElapsedTime();
+        const elapsed = reducedMotion ? 0 : qaMode ? progress * 12 : clock.getElapsedTime();
 
         pointerX += (targetPointerX - pointerX) * 0.045;
         pointerY += (targetPointerY - pointerY) * 0.045;
@@ -308,7 +309,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         camera.lookAt(targetPosition);
         const nextFov = interpolateFov(cameraProgress);
         if (Math.abs(camera.fov - nextFov) > 0.02) {
-          camera.fov += (nextFov - camera.fov) * 0.14;
+          camera.fov = qaMode ? nextFov : camera.fov + (nextFov - camera.fov) * 0.14;
           camera.updateProjectionMatrix();
         }
 
@@ -354,7 +355,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             }
           }
         }
-        if (!reducedMotion) raf = requestAnimationFrame(loop);
+        if (!reducedMotion && !qaMode) raf = requestAnimationFrame(loop);
       };
 
       const ensureFrame = () => {
