@@ -2,6 +2,7 @@ type DetailOptions = {
   mobile: boolean;
   lowPower: boolean;
   shadows: boolean;
+  ultra?: boolean;
 };
 
 function addShadow(mesh: any, shadows: boolean) {
@@ -18,17 +19,17 @@ function seeded(seed: number) {
   };
 }
 
-function canvasTexture(THREE: any, canvas: HTMLCanvasElement, color = false) {
+function canvasTexture(THREE: any, canvas: HTMLCanvasElement, color = false, anisotropy = 4) {
   const texture = new THREE.CanvasTexture(canvas);
   texture.wrapS = THREE.RepeatWrapping;
   texture.wrapT = THREE.RepeatWrapping;
-  texture.anisotropy = 4;
+  texture.anisotropy = anisotropy;
   if (color) texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 
-export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
-  const size = lowPower ? 128 : 256;
+export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean, ultra = false) {
+  const size = lowPower ? 128 : ultra ? 512 : 256;
 
   const steelCanvas = document.createElement("canvas");
   steelCanvas.width = size;
@@ -181,13 +182,13 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
   }
 
   const maps = {
-    steelNoise: canvasTexture(THREE, steelCanvas),
-    corrugation: canvasTexture(THREE, corrugationCanvas),
-    concrete: canvasTexture(THREE, concreteCanvas),
-    asphalt: canvasTexture(THREE, asphaltCanvas),
-    paint: canvasTexture(THREE, paintCanvas),
-    rubber: canvasTexture(THREE, rubberCanvas),
-    carton: canvasTexture(THREE, cartonCanvas),
+    steelNoise: canvasTexture(THREE, steelCanvas, false, ultra ? 8 : 4),
+    corrugation: canvasTexture(THREE, corrugationCanvas, false, ultra ? 8 : 4),
+    concrete: canvasTexture(THREE, concreteCanvas, false, ultra ? 8 : 4),
+    asphalt: canvasTexture(THREE, asphaltCanvas, false, ultra ? 8 : 4),
+    paint: canvasTexture(THREE, paintCanvas, false, ultra ? 8 : 4),
+    rubber: canvasTexture(THREE, rubberCanvas, false, ultra ? 8 : 4),
+    carton: canvasTexture(THREE, cartonCanvas, false, ultra ? 8 : 4),
   };
 
   maps.steelNoise.repeat.set(5, 8);
@@ -731,7 +732,7 @@ export function createDetailedTruck(
   const cabGeometry = new THREE.ExtrudeGeometry(cabShape, {
     depth: 2.08,
     bevelEnabled: true,
-    bevelSegments: options.lowPower ? 1 : 2,
+    bevelSegments: options.lowPower ? 1 : options.ultra ? 4 : 2,
     bevelSize: 0.045,
     bevelThickness: 0.035,
     curveSegments: 1,
@@ -865,8 +866,8 @@ export function createDetailedTruck(
     }
   }
 
-  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.30, 32);
-  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.32, 20);
+  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.30, options.ultra ? 48 : 32);
+  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.32, options.ultra ? 28 : 20);
   for (const x of [-2.36, 0.25, 2.55]) {
     for (const z of [-1.10, 1.10]) {
       const wheel = new THREE.Mesh(wheelGeometry, materials.rubber);
@@ -894,6 +895,58 @@ export function createDetailedTruck(
       const flap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.62, 0.34), materials.rubber);
       flap.position.set(x + 0.42, 0.42, z);
       group.add(flap);
+    }
+  }
+
+  if (options.ultra) {
+    // One instanced tread mesh adds readable tire construction without a draw
+    // call per tread block.
+    const treadGeo = new THREE.BoxGeometry(0.12, 0.045, 0.34);
+    const treadCountPerWheel = 14;
+    const wheelXs = [-2.36, 0.25, 2.55];
+    const wheelZs = [-1.10, 1.10];
+    const treads = new THREE.InstancedMesh(
+      treadGeo,
+      materials.rubber,
+      wheelXs.length * wheelZs.length * treadCountPerWheel,
+    );
+    const treadDummy = new THREE.Object3D();
+    let treadIndex = 0;
+    for (const x of wheelXs) {
+      for (const z of wheelZs) {
+        for (let i = 0; i < treadCountPerWheel; i++) {
+          const a = (i / treadCountPerWheel) * Math.PI * 2;
+          treadDummy.position.set(
+            x + Math.cos(a) * 0.455,
+            0.47 + Math.sin(a) * 0.455,
+            z,
+          );
+          treadDummy.rotation.set(0, 0, a);
+          treadDummy.updateMatrix();
+          treads.setMatrixAt(treadIndex++, treadDummy.matrix);
+        }
+      }
+    }
+    treads.instanceMatrix.needsUpdate = true;
+    group.add(treads);
+
+    // Windshield wipers and rear door lock bars are tiny but high-value scale cues
+    // in the close logistics shot.
+    for (const z of [-0.40, 0.40]) {
+      const wiper = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.46, 0.025), materials.darkMetal);
+      wiper.position.set(-3.125, 1.93, z);
+      wiper.rotation.z = -0.63;
+      group.add(wiper);
+    }
+    for (const z of [-0.56, 0.56]) {
+      const lockBar = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 1.92, 8), materials.galvanized);
+      lockBar.position.set(3.89, 1.88, z);
+      group.add(lockBar);
+      for (const y of [1.08, 2.68]) {
+        const hinge = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.12, 0.22), materials.darkMetal);
+        hinge.position.set(3.91, y, z);
+        group.add(hinge);
+      }
     }
   }
 
