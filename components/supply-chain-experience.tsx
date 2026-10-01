@@ -60,12 +60,12 @@ function resolveStage(progress: number) {
 
 function interpolateFov(progress: number) {
   const points = [
-    [0.0, 30],
-    [0.13, 36],
-    [0.3, 32],
-    [0.49, 37],
-    [0.67, 29],
-    [0.82, 35],
+    [0.0, 34],
+    [0.13, 38],
+    [0.3, 35],
+    [0.49, 38],
+    [0.67, 34],
+    [0.82, 37],
     [1.0, 42],
   ] as const;
 
@@ -164,38 +164,67 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const camera = new THREE.PerspectiveCamera(mobile ? 39 : 33, 1, 0.08, 145);
 
-      const cameraPoints = mobile
+      type CameraKeyframe = {
+        progress: number;
+        position: any;
+        target: any;
+      };
+
+      const cameraKeyframes: CameraKeyframe[] = (mobile
         ? [
-            new THREE.Vector3(-20.4, 1.85, 7.5),
-            new THREE.Vector3(-13.6, 4.3, 10.1),
-            new THREE.Vector3(2.5, 5.6, 11.8),
-            new THREE.Vector3(17.8, 4.0, 11.6),
-            new THREE.Vector3(17.5, 2.65, 10.1),
-            new THREE.Vector3(7.6, 4.2, 14.2),
-            new THREE.Vector3(3.6, 15.6, 27.0),
+            [0.00, [-24.0, 7.0, 17.0], [-12.0, 3.5, -2.5]],
+            [0.08, [-20.0, 6.0, 15.0], [-13.0, 4.0, -2.5]],
+            [0.16, [-14.0, 6.3, 14.0], [-7.0, 4.5, -4.0]],
+            [0.24, [-7.0, 6.5, 15.0], [0.8, 4.5, -2.2]],
+            [0.32, [5.5, 6.5, 15.0], [1.3, 4.8, -2.2]],
+            [0.36, [7.5, 6.2, 11.5], [7.8, 3.0, -3.2]],
+            [0.43, [7.5, 4.5, -7.5], [15.2, 1.5, -4.8]],
+            [0.51, [6.2, 4.2, 3.5], [14.3, 1.5, 4.0]],
+            [0.62, [7.7, 4.5, 3.6], [14.8, 1.3, 4.0]],
+            [0.71, [8.5, 5.5, 14.0], [8.0, 1.8, 7.0]],
+            [0.77, [0.0, 4.5, 15.5], [3.2, 1.6, 7.3]],
+            [0.84, [4.5, 8.5, 20.5], [4.5, 1.7, 6.0]],
+            [1.00, [3.6, 15.6, 27.0], [2.0, 1.6, 0.0]],
           ]
         : [
-            new THREE.Vector3(-20.9, 1.12, 4.9),
-            new THREE.Vector3(-13.4, 2.85, 7.7),
-            new THREE.Vector3(2.9, 4.35, 8.9),
-            new THREE.Vector3(18.6, 2.7, 5.6),
-            new THREE.Vector3(18.2, 1.95, 8.8),
-            new THREE.Vector3(7.3, 2.15, 12.8),
-            new THREE.Vector3(3.4, 17.4, 28.6),
-          ];
+            [0.00, [-25.0, 5.8, 14.0], [-12.0, 3.5, -2.5]],
+            [0.08, [-21.0, 4.5, 11.0], [-13.0, 4.0, -2.5]],
+            [0.16, [-15.0, 5.2, 10.0], [-7.0, 4.5, -4.0]],
+            [0.24, [-8.0, 5.2, 11.0], [0.8, 4.5, -2.2]],
+            [0.32, [4.8, 5.5, 11.5], [1.3, 4.8, -2.2]],
+            [0.36, [7.0, 5.0, 9.0], [7.8, 3.0, -3.2]],
+            [0.43, [7.0, 3.2, -5.5], [15.0, 1.4, -4.8]],
+            [0.51, [6.2, 2.8, 3.4], [14.3, 1.25, 4.0]],
+            [0.62, [7.8, 3.0, 3.65], [14.8, 1.2, 4.0]],
+            [0.71, [8.0, 4.0, 13.0], [8.0, 1.7, 7.0]],
+            [0.77, [0.0, 2.6, 13.0], [3.2, 1.45, 7.3]],
+            [0.84, [4.0, 8.0, 20.0], [4.5, 1.6, 6.0]],
+            [1.00, [3.4, 17.4, 28.6], [2.0, 1.6, 0.0]],
+          ]
+      ).map(([progress, position, target]) => ({
+        progress: progress as number,
+        position: new THREE.Vector3(...(position as [number, number, number])),
+        target: new THREE.Vector3(...(target as [number, number, number])),
+      }));
 
-      const targetPoints = [
-        new THREE.Vector3(-18.0, 0.95, 0.0),
-        new THREE.Vector3(-8.5, 5.1, -4.0),
-        new THREE.Vector3(1.4, 4.6, -2.1),
-        new THREE.Vector3(16.1, 1.55, 0.6),
-        new THREE.Vector3(14.8, 1.35, 4.0),
-        new THREE.Vector3(3.1, 1.45, 7.0),
-        new THREE.Vector3(2.0, 1.6, 0.0),
-      ];
+      const sampleCamera = (value: number, outPosition: any, outTarget: any) => {
+        const clamped = Math.min(1, Math.max(0, value));
+        let index = cameraKeyframes.length - 2;
+        for (let i = 0; i < cameraKeyframes.length - 1; i++) {
+          if (clamped <= cameraKeyframes[i + 1].progress) {
+            index = i;
+            break;
+          }
+        }
 
-      const cameraCurve = new THREE.CatmullRomCurve3(cameraPoints, false, "catmullrom", 0.42);
-      const targetCurve = new THREE.CatmullRomCurve3(targetPoints, false, "catmullrom", 0.4);
+        const a = cameraKeyframes[index];
+        const b = cameraKeyframes[index + 1];
+        const span = Math.max(0.0001, b.progress - a.progress);
+        const local = Math.min(1, Math.max(0, (clamped - a.progress) / span));
+        const eased = local * local * (3 - 2 * local);
+        outPosition.lerpVectors(a.position, b.position, eased);
+        outTarget.lerpVectors(a.target, b.target, eased);
+      };
 
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower });
       scene.add(supplyScene.world);
@@ -296,8 +325,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         pointerY += (targetPointerY - pointerY) * 0.045;
 
         const cameraProgress = Math.min(1, Math.max(0, progress));
-        cameraCurve.getPointAt(cameraProgress, cameraPosition);
-        targetCurve.getPointAt(cameraProgress, targetPosition);
+        sampleCamera(cameraProgress, cameraPosition, targetPosition);
 
         if (!mobile) {
           cameraPosition.x += pointerX * 0.26;
