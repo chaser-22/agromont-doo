@@ -627,7 +627,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   // FARM CAMPUS — repeated halls, feed silos, fans and service infrastructure.
   // ---------------------------------------------------------------------------
   const farmCampus = new THREE.Group();
-  farmCampus.position.set(16.2, 0, -5.0);
+  farmCampus.position.set(16.2, 0, -6.7);
   world.add(farmCampus);
 
   const farmCount = lowPower ? 2 : 3;
@@ -678,7 +678,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   // SORTING / PACKING — roller line, scanner and palletised cartons.
   // ---------------------------------------------------------------------------
   const sorting = new THREE.Group();
-  sorting.position.set(14.6, 0, 7.0);
+  sorting.position.set(14.6, 0, 10.1);
   world.add(sorting);
 
   const sortingHall = addShadow(new THREE.Mesh(new THREE.BoxGeometry(10.6, 3.8, 5.2), materials.green), shadows);
@@ -690,7 +690,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   sorting.add(sortingRoof);
 
   const glazing = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.82, 0.08), materials.glass);
-  glazing.position.set(0, 2.30, -2.64);
+  glazing.position.set(0, 2.30, 2.64);
   sorting.add(glazing);
 
   const sortSignTexture = createSignTexture(THREE, ["SORTIRANJE / PAKOVANJE", "MARTINIĆI / PROIZVODNI TOK"], {
@@ -700,11 +700,11 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   });
   const sortSignMaterial = new THREE.MeshStandardMaterial({ map: sortSignTexture, roughness: 0.55 });
   const sortSign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.10), sortSignMaterial);
-  sortSign.position.set(0.4, 1.06, -2.66);
+  sortSign.position.set(0.4, 1.06, 2.66);
   sorting.add(sortSign);
 
   const beltFrame = addShadow(new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.22, 1.25), materials.darkMetal), shadows);
-  beltFrame.position.set(-0.3, 0.92, -3.05);
+  beltFrame.position.set(-0.3, 0.92, 3.05);
   sorting.add(beltFrame);
 
   const rollers: any[] = [];
@@ -715,7 +715,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       materials.galvanized,
     );
     roller.rotation.x = Math.PI / 2;
-    roller.position.set(-4.25 + i * (8.15 / Math.max(1, rollerCount - 1)), 1.07, -3.05);
+    roller.position.set(-4.25 + i * (8.15 / Math.max(1, rollerCount - 1)), 1.07, 3.05);
     sorting.add(roller);
     rollers.push(roller);
   }
@@ -726,7 +726,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   for (let i = 0; i < eggCount; i++) {
     const egg = addShadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
     egg.scale.setScalar(0.30);
-    egg.position.set(-4.0 + i * 0.72, 1.39, -3.05);
+    egg.position.set(-4.0 + i * 0.72, 1.39, 3.05);
     sorting.add(egg);
     eggs.push(egg);
   }
@@ -743,15 +743,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const scanLight = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.045, 1.36), materials.lightLens);
   scanLight.position.set(0, 1.58, 0);
   scannerArch.add(scanLight);
-  scannerArch.position.set(1.15, 0.1, -3.05);
+  scannerArch.position.set(1.15, 0.1, 3.05);
   sorting.add(scannerArch);
 
   const packer = addShadow(new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.0, 2.0), materials.galvanized), shadows);
-  packer.position.set(3.15, 1.0, -3.05);
+  packer.position.set(3.15, 1.0, 3.05);
   sorting.add(packer);
 
   const packerWindow = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 1.35), materials.glass);
-  packerWindow.position.set(2.08, 1.22, -3.05);
+  packerWindow.position.set(2.08, 1.22, 3.05);
   sorting.add(packerWindow);
 
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);

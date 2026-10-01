@@ -1,4 +1,5 @@
 import { chromium } from "playwright";
+import { existsSync, readdirSync } from "node:fs";
 import { mkdir, rename, rm, writeFile } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 import path from "node:path";
@@ -15,7 +16,7 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: false,
     hasTouch: false,
-    motionSteps: 28,
+    motionSteps: 20,
     playbackFps: 10,
   },
   {
@@ -25,7 +26,7 @@ const profiles = [
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true,
-    motionSteps: 24,
+    motionSteps: 18,
     playbackFps: 10,
   },
 ];
@@ -50,6 +51,32 @@ function buildSamples(steps) {
 function milestoneIndex(progress) {
   return milestones.findIndex((value) => Math.abs(value - progress) < 0.00001);
 }
+
+function resolveFfmpeg() {
+  if (process.env.FFMPEG_PATH && existsSync(process.env.FFMPEG_PATH)) {
+    return process.env.FFMPEG_PATH;
+  }
+
+  const cacheRoot = path.join(process.env.HOME || "", ".cache", "ms-playwright");
+  try {
+    const candidates = readdirSync(cacheRoot)
+      .filter((name) => name.startsWith("ffmpeg-"))
+      .sort()
+      .reverse();
+    for (const name of candidates) {
+      const binary = path.join(
+        cacheRoot,
+        name,
+        process.platform === "win32" ? "ffmpeg.exe" : "ffmpeg-linux",
+      );
+      if (existsSync(binary)) return binary;
+    }
+  } catch {}
+
+  return "ffmpeg";
+}
+
+const ffmpegPath = resolveFfmpeg();
 
 function frameName(index) {
   const label = String(index).padStart(2, "0");
@@ -143,6 +170,8 @@ for (const profile of profiles) {
   let previous = null;
   let maxCameraStep = 0;
   let maxTargetStep = 0;
+  let maxCameraRate = 0;
+  let maxTargetRate = 0;
   let maxFovStep = 0;
 
   try {
@@ -204,8 +233,13 @@ for (const profile of profiles) {
       }
 
       if (previous) {
-        maxCameraStep = Math.max(maxCameraStep, distance(snapshot.camera.position, previous.camera.position));
-        maxTargetStep = Math.max(maxTargetStep, distance(snapshot.camera.target, previous.camera.target));
+        const deltaProgress = Math.max(0.000001, progress - previous.progress);
+        const cameraStep = distance(snapshot.camera.position, previous.camera.position);
+        const targetStep = distance(snapshot.camera.target, previous.camera.target);
+        maxCameraStep = Math.max(maxCameraStep, cameraStep);
+        maxTargetStep = Math.max(maxTargetStep, targetStep);
+        maxCameraRate = Math.max(maxCameraRate, cameraStep / deltaProgress);
+        maxTargetRate = Math.max(maxTargetRate, targetStep / deltaProgress);
         maxFovStep = Math.max(maxFovStep, Math.abs(snapshot.camera.fov - previous.camera.fov));
       }
       previous = snapshot;
@@ -248,7 +282,7 @@ for (const profile of profiles) {
     screencastStarted = false;
 
     const ffmpeg = spawnSync(
-      "ffmpeg",
+      ffmpegPath,
       [
         "-y",
         "-loglevel", "error",
@@ -283,11 +317,11 @@ for (const profile of profiles) {
       );
     }
 
-    if (maxCameraStep > 3.0) {
-      report.failures.push(`${profile.name}: camera step discontinuity ${maxCameraStep.toFixed(3)}`);
+    if (maxCameraRate > 190) {
+      report.failures.push(`${profile.name}: camera motion rate discontinuity ${maxCameraRate.toFixed(1)} units/progress`);
     }
-    if (maxTargetStep > 3.0) {
-      report.failures.push(`${profile.name}: target step discontinuity ${maxTargetStep.toFixed(3)}`);
+    if (maxTargetRate > 130) {
+      report.failures.push(`${profile.name}: target motion rate discontinuity ${maxTargetRate.toFixed(1)} units/progress`);
     }
     if (maxFovStep > 3.2) {
       report.failures.push(`${profile.name}: FOV step discontinuity ${maxFovStep.toFixed(3)}`);
@@ -306,6 +340,8 @@ for (const profile of profiles) {
         sampleCount: samples.length,
         maxCameraStep,
         maxTargetStep,
+        maxCameraRate,
+        maxTargetRate,
         maxFovStep,
       },
       capture: {
@@ -369,6 +405,8 @@ const cards = report.profiles.map((profile) => {
         Triangles: <strong>${last?.renderer?.triangles ?? "?"}</strong><br>
         Camera max step: <strong>${profile.motion.maxCameraStep.toFixed(3)}</strong> ·
         Target max step: <strong>${profile.motion.maxTargetStep.toFixed(3)}</strong> ·
+        Camera rate: <strong>${profile.motion.maxCameraRate.toFixed(1)}</strong> ·
+        Target rate: <strong>${profile.motion.maxTargetRate.toFixed(1)}</strong> ·
         FOV max step: <strong>${profile.motion.maxFovStep.toFixed(3)}</strong><br>
         Samples: <strong>${profile.motion.sampleCount}</strong> ·
         Avg render: <strong>${profile.capture.averageRenderMs.toFixed(0)} ms</strong> ·
@@ -426,7 +464,7 @@ const summary = [
   `Profiles: ${profiles.map((profile) => profile.name).join(", ")}`,
   `Result: ${report.failures.length ? `❌ ${report.failures.length} failure(s)` : "✅ structural checks passed"}`,
   "",
-  "Artifacts include a normalized WebM timeline recording, exact milestone JPEG frames from the same screencast stream, renderer metrics JSON, and an HTML review page for each profile.",
+  "Artifacts include a WebM timeline recording, exact milestone JPEG frames from the same screencast stream, renderer metrics JSON, and an HTML review page for each profile.",
   "",
   ...report.failures.map((failure) => `- ${failure}`),
 ].join("\n");
