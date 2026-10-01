@@ -9,6 +9,11 @@ import {
   createSignTexture,
   createTerrainBackdrop,
 } from "@/lib/industrial-detail-kit";
+import {
+  createUltraEggGrader,
+  createUltraProcessSkid,
+  createUltraRigidTruck,
+} from "@/lib/ultra-hero-assets";
 
 export type SupplySceneOptions = {
   mobile: boolean;
@@ -224,6 +229,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const { mobile, lowPower } = options;
   const shadows = !mobile;
   const detailOptions = { mobile, lowPower, shadows };
+  const useUltraAssets = !mobile && !lowPower;
   const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower);
 
   const materials = {
@@ -877,6 +883,18 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
   }
 
+  if (useUltraAssets) {
+    dustCollector.visible = false;
+    loadOut.visible = false;
+    processVessels.forEach((vessel) => {
+      vessel.visible = false;
+    });
+
+    const ultraProcessSkid = createUltraProcessSkid(THREE, materials, detailOptions);
+    ultraProcessSkid.position.set(0.05, 0, 0.15);
+    feedMill.add(ultraProcessSkid);
+  }
+
   const pelletGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8);
   const pelletCount = lowPower ? 22 : mobile ? 38 : 76;
   const pellets = new THREE.InstancedMesh(pelletGeometry, materials.amber, pelletCount);
@@ -1133,6 +1151,22 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   packerWindow.position.set(3.01, 1.02, 1.95);
   sorting.add(packerWindow);
 
+  let animatedEggs = eggs;
+  if (useUltraAssets) {
+    grader.visible = false;
+    scannerArch.visible = false;
+    packer.visible = false;
+    packerTop.visible = false;
+    controlBox.visible = false;
+    statusLamp.visible = false;
+    packerWindow.visible = false;
+
+    const ultraGrader = createUltraEggGrader(THREE, materials, detailOptions);
+    ultraGrader.position.set(-0.05, 0, 3.05);
+    sorting.add(ultraGrader);
+    animatedEggs = ultraGrader.userData.eggs ?? eggs;
+  }
+
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);
   palletA.position.set(4.25, 0, 0.6);
   sorting.add(palletA);
@@ -1162,7 +1196,9 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     logistics.add(post);
   }
 
-  const truck = createDetailedTruck(THREE, materials, detailOptions);
+  const truck = useUltraAssets
+    ? createUltraRigidTruck(THREE, materials, detailOptions)
+    : createDetailedTruck(THREE, materials, detailOptions);
   truck.position.set(0.45, 0, 0.1);
   truck.rotation.y = Math.PI;
   logistics.add(truck);
@@ -1265,8 +1301,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
     pellets.instanceMatrix.needsUpdate = true;
 
-    eggs.forEach((egg, index) => {
-      const t = ((index / eggs.length) + elapsed * 0.033) % 1;
+    animatedEggs.forEach((egg: any, index: number) => {
+      const t = ((index / animatedEggs.length) + elapsed * 0.033) % 1;
       egg.position.x = -3.9 + t * 7.05;
       egg.position.y = 1.46 + Math.sin(t * Math.PI * 8) * 0.012;
       egg.rotation.z = t * 0.24;
