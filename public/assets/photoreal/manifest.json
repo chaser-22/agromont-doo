@@ -1,0 +1,48 @@
+{
+  "generatedAt": "2026-10-01T22:24:25.565Z",
+  "source": "Poly Haven",
+  "sourceUrl": "https://polyhaven.com",
+  "license": "CC0",
+  "assets": {
+    "asphalt": "https://polyhaven.com/a/asphalt_floor",
+    "concrete": "https://polyhaven.com/a/concrete_floor_01",
+    "hdri": "https://polyhaven.com/a/hanger_exterior_cloudy"
+  },
+  "files": [
+    {
+      "filename": "asphalt-basecolor.jpg",
+      "bytes": 1152035,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_floor/asphalt_floor_diff_1k.jpg"
+    },
+    {
+      "filename": "asphalt-normal.jpg",
+      "bytes": 1365497,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_floor/asphalt_floor_nor_gl_1k.jpg"
+    },
+    {
+      "filename": "asphalt-roughness.jpg",
+      "bytes": 539563,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_floor/asphalt_floor_rough_1k.jpg"
+    },
+    {
+      "filename": "concrete-basecolor.jpg",
+      "bytes": 755740,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_diff_1k.jpg"
+    },
+    {
+      "filename": "concrete-normal.jpg",
+      "bytes": 909898,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_nor_gl_1k.jpg"
+    },
+    {
+      "filename": "concrete-roughness.jpg",
+      "bytes": 354529,
+      "source": "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/concrete_floor_01/concrete_floor_01_rough_1k.jpg"
+    },
+    {
+      "filename": "industrial-overcast.hdr",
+      "bytes": 6463643,
+      "source": "https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/2k/hanger_exterior_cloudy_2k.hdr"
+    }
+  ]
+}
