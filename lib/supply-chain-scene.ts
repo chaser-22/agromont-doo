@@ -229,56 +229,56 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const materials = {
     siloMetal: new THREE.MeshStandardMaterial({
       color: 0xa6aaa4,
-      roughness: 0.35,
-      metalness: 0.84,
+      roughness: 0.48,
+      metalness: 0.64,
       roughnessMap: surfaceMaps.steelNoise,
       bumpMap: surfaceMaps.corrugation,
-      bumpScale: 0.055,
-      envMapIntensity: 1.15,
+      bumpScale: 0.038,
+      envMapIntensity: 0.78,
     }),
     galvanized: new THREE.MeshStandardMaterial({
       color: 0x9ba29d,
-      roughness: 0.38,
-      metalness: 0.76,
+      roughness: 0.52,
+      metalness: 0.66,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 1.1,
+      envMapIntensity: 0.78,
     }),
     darkMetal: new THREE.MeshStandardMaterial({
       color: 0x1a211d,
-      roughness: 0.52,
-      metalness: 0.62,
+      roughness: 0.64,
+      metalness: 0.48,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 0.75,
+      envMapIntensity: 0.58,
     }),
     green: new THREE.MeshStandardMaterial({
       color: 0x183f2c,
-      roughness: 0.52,
-      metalness: 0.12,
+      roughness: 0.64,
+      metalness: 0.08,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.paint,
-      bumpScale: 0.018,
+      bumpScale: 0.026,
     }),
     greenCutaway: new THREE.MeshPhysicalMaterial({
       color: 0x183f2c,
-      roughness: 0.43,
-      metalness: 0.16,
+      roughness: 0.52,
+      metalness: 0.10,
       roughnessMap: surfaceMaps.paint,
       transparent: true,
       opacity: 1,
       side: THREE.DoubleSide,
-      envMapIntensity: 0.9,
+      envMapIntensity: 0.66,
     }),
     concrete: new THREE.MeshStandardMaterial({
-      color: 0x777a72,
-      roughness: 0.96,
+      color: 0x85857d,
+      roughness: 0.92,
       metalness: 0,
       roughnessMap: surfaceMaps.concrete,
       bumpMap: surfaceMaps.concrete,
       bumpScale: 0.035,
     }),
     asphalt: new THREE.MeshStandardMaterial({
-      color: 0x272a27,
-      roughness: 0.94,
+      color: 0x2f312f,
+      roughness: 0.98,
       metalness: 0,
       roughnessMap: surfaceMaps.concrete,
       bumpMap: surfaceMaps.concrete,
@@ -293,25 +293,25 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpScale: 0.012,
     }),
     hallPanel: new THREE.MeshStandardMaterial({
-      color: 0xd9d8ce,
-      roughness: 0.66,
-      metalness: 0.08,
+      color: 0xcecdc3,
+      roughness: 0.73,
+      metalness: 0.045,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.corrugation,
       bumpScale: 0.018,
     }),
     roofMetal: new THREE.MeshStandardMaterial({
-      color: 0x7f8983,
-      roughness: 0.45,
-      metalness: 0.56,
+      color: 0x858c87,
+      roughness: 0.56,
+      metalness: 0.46,
       roughnessMap: surfaceMaps.steelNoise,
       bumpMap: surfaceMaps.corrugation,
       bumpScale: 0.025,
     }),
     trailer: new THREE.MeshStandardMaterial({
-      color: 0xd8d6ca,
-      roughness: 0.58,
-      metalness: 0.18,
+      color: 0xd5d3c9,
+      roughness: 0.69,
+      metalness: 0.10,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.corrugation,
       bumpScale: 0.02,
@@ -358,15 +358,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpScale: 0.02,
     }),
     glass: new THREE.MeshPhysicalMaterial({
-      color: 0x839a90,
-      roughness: 0.16,
+      color: 0x81958d,
+      roughness: 0.22,
       metalness: 0,
       transparent: true,
-      opacity: 0.58,
-      transmission: lowPower ? 0 : 0.18,
+      opacity: 0.52,
+      transmission: lowPower ? 0 : 0.12,
       thickness: 0.12,
       ior: 1.45,
-      envMapIntensity: 0.8,
+      envMapIntensity: 0.58,
     }),
     lightLens: new THREE.MeshStandardMaterial({
       color: 0xf4d49a,
@@ -376,13 +376,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       metalness: 0,
     }),
     roadLine: new THREE.MeshBasicMaterial({ color: 0xd8d3bf }),
+    yardJoint: new THREE.MeshBasicMaterial({ color: 0x3c3b36, transparent: true, opacity: 0.42, depthWrite: false }),
+    tireMark: new THREE.MeshBasicMaterial({ color: 0x141614, transparent: true, opacity: 0.13, depthWrite: false }),
     grass: new THREE.MeshStandardMaterial({
-      color: 0x27382b,
+      color: 0x334332,
       roughness: 1,
       metalness: 0,
     }),
     mountain: new THREE.MeshStandardMaterial({
-      color: 0x46584b,
+      color: 0x59665b,
       roughness: 1,
       metalness: 0,
       side: THREE.DoubleSide,
@@ -412,6 +414,49 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   serviceLane.position.set(1, -0.11, 7.4);
   world.add(serviceLane);
   world.add(createRoadMarkings(THREE, materials.roadLine));
+
+  // Expansion joints, drainage and tire wear stop the yard reading as one pristine slab.
+  for (let x = -20; x <= 22; x += 6) {
+    const joint = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.012, 19.0), materials.yardJoint);
+    joint.position.set(x, -0.125, -2.1);
+    world.add(joint);
+  }
+  for (const z of [-8.2, -1.9, 4.35]) {
+    const joint = new THREE.Mesh(new THREE.BoxGeometry(43.5, 0.012, 0.035), materials.yardJoint);
+    joint.position.set(1.0, -0.124, z);
+    world.add(joint);
+  }
+
+  const drain = new THREE.Group();
+  const drainBed = new THREE.Mesh(new THREE.BoxGeometry(28.0, 0.055, 0.34), materials.darkMetal);
+  drainBed.position.set(1.0, -0.075, 4.75);
+  drain.add(drainBed);
+  const grateGeo = new THREE.BoxGeometry(0.055, 0.025, 0.30);
+  const grateCount = lowPower ? 28 : 56;
+  const grates = new THREE.InstancedMesh(grateGeo, materials.galvanized, grateCount);
+  const grateDummy = new THREE.Object3D();
+  for (let i = 0; i < grateCount; i++) {
+    grateDummy.position.set(-12.7 + i * (25.4 / Math.max(1, grateCount - 1)), -0.035, 4.75);
+    grateDummy.updateMatrix();
+    grates.setMatrixAt(i, grateDummy.matrix);
+  }
+  grates.instanceMatrix.needsUpdate = true;
+  drain.add(grates);
+  world.add(drain);
+
+  if (!lowPower) {
+    for (const [x, z, sx, sz, rot] of [
+      [-15.2, 1.0, 4.2, 0.24, -0.10],
+      [2.8, 6.7, 5.6, 0.20, 0.04],
+      [9.6, 7.6, 3.2, 0.18, -0.08],
+    ] as const) {
+      const mark = new THREE.Mesh(new THREE.PlaneGeometry(sx, sz), materials.tireMark);
+      mark.rotation.x = -Math.PI / 2;
+      mark.rotation.z = rot;
+      mark.position.set(x, -0.073, z);
+      world.add(mark);
+    }
+  }
 
   // Concrete curbs create a real yard edge and give the camera scale cues.
   for (const z of [-12.7, 12.7]) {
@@ -530,8 +575,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   feedMill.position.set(1.3, 0, -2.15);
   world.add(feedMill);
 
+  const feedPlinth = addShadow(
+    new THREE.Mesh(new THREE.BoxGeometry(8.55, 0.34, 6.65), materials.concrete),
+    shadows,
+  );
+  feedPlinth.position.y = 0.17;
+  feedMill.add(feedPlinth);
+
   const feedMain = addShadow(new THREE.Mesh(new THREE.BoxGeometry(8.3, 7.8, 6.45), materials.greenCutaway), shadows);
-  feedMain.position.y = 3.62;
+  feedMain.position.y = 3.78;
   feedMill.add(feedMain);
 
   const facadeSeams = createPanelSeams(THREE, materials.darkMetal, 8.1, 7.2, 3.235, lowPower ? 6 : 12);
@@ -681,15 +733,41 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   sorting.position.set(14.6, 0, 10.1);
   world.add(sorting);
 
+  const sortingPlinth = addShadow(
+    new THREE.Mesh(new THREE.BoxGeometry(10.8, 0.30, 5.35), materials.concrete),
+    shadows,
+  );
+  sortingPlinth.position.y = 0.15;
+  sorting.add(sortingPlinth);
+
   const sortingHall = addShadow(new THREE.Mesh(new THREE.BoxGeometry(10.6, 3.8, 5.2), materials.green), shadows);
-  sortingHall.position.y = 1.65;
+  sortingHall.position.y = 1.78;
   sorting.add(sortingHall);
 
   const sortingRoof = addShadow(new THREE.Mesh(new THREE.BoxGeometry(11.0, 0.20, 5.65), materials.roofMetal), shadows);
-  sortingRoof.position.y = 3.62;
+  sortingRoof.position.y = 3.78;
   sorting.add(sortingRoof);
 
-  const glazing = new THREE.Mesh(new THREE.BoxGeometry(8.4, 0.82, 0.08), materials.glass);
+  const sortSeams = createPanelSeams(THREE, materials.galvanized, 10.2, 3.35, 2.64, lowPower ? 8 : 16);
+  sortSeams.position.y = 0.28;
+  sorting.add(sortSeams);
+
+  const rollupDoor = new THREE.Mesh(new THREE.BoxGeometry(2.55, 2.45, 0.08), materials.darkMetal);
+  rollupDoor.position.set(-3.65, 1.40, 2.64);
+  sorting.add(rollupDoor);
+  for (let y = 0.38; y < 2.55; y += 0.27) {
+    const slat = new THREE.Mesh(new THREE.BoxGeometry(2.42, 0.028, 0.035), materials.galvanized);
+    slat.position.set(-3.65, y, 2.69);
+    sorting.add(slat);
+  }
+
+  for (const x of [-5.05, 5.05]) {
+    const downpipe = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 3.25, 8), materials.galvanized);
+    downpipe.position.set(x, 1.78, 2.73);
+    sorting.add(downpipe);
+  }
+
+  const glazing = new THREE.Mesh(new THREE.BoxGeometry(5.45, 0.82, 0.08), materials.glass);
   glazing.position.set(0, 2.30, 2.64);
   sorting.add(glazing);
 
@@ -706,6 +784,29 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const beltFrame = addShadow(new THREE.Mesh(new THREE.BoxGeometry(8.8, 0.22, 1.25), materials.darkMetal), shadows);
   beltFrame.position.set(-0.3, 0.92, 3.05);
   sorting.add(beltFrame);
+
+  for (const z of [2.48, 3.62]) {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(8.75, 0.055, 0.055), materials.galvanized);
+    rail.position.set(-0.3, 1.42, z);
+    sorting.add(rail);
+    const midRail = rail.clone();
+    midRail.position.y = 1.18;
+    sorting.add(midRail);
+  }
+  for (const x of [-4.45, -2.45, -0.45, 1.55, 3.55]) {
+    for (const z of [2.52, 3.58]) {
+      const leg = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.95, 0.09), materials.galvanized);
+      leg.position.set(x, 0.48, z);
+      sorting.add(leg);
+    }
+  }
+  const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.62, 18), materials.darkMetal);
+  driveMotor.rotation.z = Math.PI / 2;
+  driveMotor.position.set(4.35, 0.93, 3.78);
+  sorting.add(driveMotor);
+  const motorGuard = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.66, 0.58), materials.galvanized);
+  motorGuard.position.set(4.0, 0.94, 3.78);
+  sorting.add(motorGuard);
 
   const rollers: any[] = [];
   const rollerCount = lowPower ? 8 : 16;
@@ -749,6 +850,16 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const packer = addShadow(new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.0, 2.0), materials.galvanized), shadows);
   packer.position.set(3.15, 1.0, 3.05);
   sorting.add(packer);
+
+  const packerTop = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.18, 2.18), materials.darkMetal);
+  packerTop.position.set(3.15, 2.06, 3.05);
+  sorting.add(packerTop);
+  const controlBox = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.62, 0.20), materials.darkMetal);
+  controlBox.position.set(2.02, 1.48, 2.10);
+  sorting.add(controlBox);
+  const statusLamp = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), materials.lightLens);
+  statusLamp.position.set(2.02, 1.88, 2.10);
+  sorting.add(statusLamp);
 
   const packerWindow = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 1.35), materials.glass);
   packerWindow.position.set(2.08, 1.22, 3.05);
