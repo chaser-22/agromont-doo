@@ -422,10 +422,20 @@ def build_asset(name, builder):
         glass_body=join_meshes(glass, name+"_Glass")
     bake_maps(name,body,1024)
 
+    # Modeling helpers use the site's Y-up convention. Convert authored meshes
+    # into Blender Z-up before save/export so export_yup=True produces the same
+    # X/Y/Z orientation expected by Three.js.
+    authored_objects = [body] + ([glass_body] if glass_body else [])
+    for authored in authored_objects:
+        authored.rotation_euler.x = math.pi / 2
+        select_only([authored])
+        bpy.context.view_layer.objects.active = authored
+        bpy.ops.object.transform_apply(location=False, rotation=True, scale=False)
+
     bpy.ops.file.pack_all()
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(SRC,f"{name}.blend"))
 
-    export_selected(os.path.join(RAW,f"{name}-lod0.glb"), [body]+([glass_body] if glass_body else []))
+    export_selected(os.path.join(RAW,f"{name}-lod0.glb"), authored_objects)
     for level,ratio in ((1,.56),(2,.30)):
         b=duplicate_obj(body,f"{name}_Body_LOD{level}",ratio)
         g=duplicate_obj(glass_body,f"{name}_Glass_LOD{level}",1.0) if glass_body else None
