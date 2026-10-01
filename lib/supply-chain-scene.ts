@@ -983,7 +983,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     background: "#153b29",
     foreground: "#f2ede2",
   });
-  const sortSignMaterial = new THREE.MeshStandardMaterial({ map: sortSignTexture, roughness: 0.55 });
+  const sortSignMaterial = new THREE.MeshStandardMaterial({ map: sortSignTexture, roughness: 0.68 });
   const sortSign = new THREE.Mesh(new THREE.PlaneGeometry(4.4, 1.10), sortSignMaterial);
   sortSign.position.set(0.4, 1.06, 2.66);
   sorting.add(sortSign);
@@ -1051,7 +1051,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
 
   const eggs: any[] = [];
   const eggGeometry = makeEggGeometry(THREE);
-  const eggCount = lowPower ? 4 : mobile ? 7 : 12;
+  const eggCount = lowPower ? 6 : mobile ? 10 : 16;
   for (let i = 0; i < eggCount; i++) {
     const egg = addShadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
     egg.scale.setScalar(0.265);
@@ -1060,25 +1060,36 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     eggs.push(egg);
   }
 
-  const infeedGuard = new THREE.Mesh(new THREE.BoxGeometry(1.05, 0.80, 1.82), materials.stainless);
-  infeedGuard.position.set(-3.82, 1.72, graderZ);
+  const infeedGuard = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.46, 1.68), materials.stainless);
+  infeedGuard.position.set(-3.92, 1.62, graderZ);
   grader.add(infeedGuard);
-  const inspectionHood = new THREE.Mesh(new THREE.BoxGeometry(1.35, 0.62, 1.92), materials.darkMetal);
-  inspectionHood.position.set(-0.65, 1.75, graderZ);
+  const inspectionHood = new THREE.Mesh(new THREE.BoxGeometry(1.18, 0.24, 1.78), materials.stainless);
+  inspectionHood.position.set(-0.55, 1.92, graderZ);
   grader.add(inspectionHood);
-  const inspectionWindow = new THREE.Mesh(new THREE.BoxGeometry(1.15, 0.34, 0.035), materials.glass);
-  inspectionWindow.position.set(-0.65, 1.77, graderZ + 0.98);
+  const inspectionWindow = new THREE.Mesh(new THREE.BoxGeometry(0.82, 0.18, 0.035), materials.glass);
+  inspectionWindow.position.set(-0.55, 1.91, graderZ + 0.91);
   grader.add(inspectionWindow);
 
   const packingLaneCount = lowPower ? 3 : mobile ? 4 : 6;
   for (let lane = 0; lane < packingLaneCount; lane++) {
-    const laneZ = 1.45 + lane * (2.85 / Math.max(1, packingLaneCount - 1));
-    const laneFrame = new THREE.Mesh(new THREE.BoxGeometry(2.45, 0.12, 0.36), materials.stainless);
-    laneFrame.position.set(3.15, 0.92, laneZ);
+    const laneZ = 1.55 + lane * (2.65 / Math.max(1, packingLaneCount - 1));
+    const laneFrame = new THREE.Mesh(new THREE.BoxGeometry(2.35, 0.09, 0.26), materials.stainless);
+    laneFrame.position.set(3.05, 0.96, laneZ);
     grader.add(laneFrame);
-    const laneCover = new THREE.Mesh(new THREE.BoxGeometry(0.75, 0.82, 0.42), materials.offWhite);
-    laneCover.position.set(3.85, 1.35, laneZ);
-    grader.add(laneCover);
+
+    const laneGuide = new THREE.Mesh(new THREE.BoxGeometry(2.25, 0.045, 0.045), materials.darkMetal);
+    laneGuide.position.set(3.05, 1.22, laneZ + 0.12);
+    grader.add(laneGuide);
+
+    const terminal = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.42, 0.34), materials.offWhite);
+    terminal.position.set(4.08, 1.18, laneZ);
+    grader.add(terminal);
+
+    if (!lowPower && lane % 2 === 0) {
+      const carton = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.13, 0.32), materials.carton);
+      carton.position.set(3.48, 1.12, laneZ);
+      grader.add(carton);
+    }
   }
 
   const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.58, 18), materials.darkMetal);
