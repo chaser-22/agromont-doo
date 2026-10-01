@@ -1,10 +1,12 @@
 name: Build Blender hero assets
+# Regenerate from the current final-realism branch head.
 
 on:
   workflow_dispatch:
   push:
     branches:
       - feat/blender-pbr-hero-assets
+      - feat/final-photoreal-materials-lighting
     paths:
       - "tools/blender/**"
       - ".github/workflows/build-blender-hero-assets.yml"

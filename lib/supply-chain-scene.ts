@@ -415,6 +415,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     roadLine: new THREE.MeshBasicMaterial({ color: 0xd8d3bf }),
     yardJoint: new THREE.MeshBasicMaterial({ color: 0x3c3b36, transparent: true, opacity: 0.42, depthWrite: false }),
     tireMark: new THREE.MeshBasicMaterial({ color: 0x141614, transparent: true, opacity: 0.13, depthWrite: false }),
+    yardStain: new THREE.MeshBasicMaterial({ color: 0x252b27, transparent: true, opacity: 0.075, depthWrite: false }),
+    dustWash: new THREE.MeshBasicMaterial({ color: 0xb2a98e, transparent: true, opacity: 0.055, depthWrite: false }),
     grass: new THREE.MeshStandardMaterial({
       color: 0x334332,
       roughness: 1,
@@ -518,6 +520,35 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       mark.rotation.z = rot;
       mark.position.set(x, -0.073, z);
       world.add(mark);
+    }
+  }
+
+  if (!lowPower) {
+    const stainSpecs = [
+      [3.4, 7.25, 1.65, 0.48, 0.16],
+      [6.1, 7.55, 1.05, 0.36, -0.24],
+      [0.5, 4.65, 1.15, 0.24, 0.08],
+      [-2.4, 4.72, 0.78, 0.20, -0.14],
+    ] as const;
+    for (const [x, z, sx, sz, rot] of stainSpecs) {
+      const patch = new THREE.Mesh(new THREE.CircleGeometry(1, 18), materials.yardStain);
+      patch.rotation.x = -Math.PI / 2;
+      patch.rotation.z = rot;
+      patch.scale.set(sx, sz, 1);
+      patch.position.set(x, z > 6 ? -0.052 : -0.070, z);
+      world.add(patch);
+    }
+
+    for (const [x, z, sx, sz, rot] of [
+      [-18.0, -11.85, 3.8, 0.52, 0.04],
+      [17.0, 11.88, 4.1, 0.48, -0.03],
+      [-7.5, 11.80, 2.6, 0.44, 0.08],
+    ] as const) {
+      const dust = new THREE.Mesh(new THREE.PlaneGeometry(sx, sz), materials.dustWash);
+      dust.rotation.x = -Math.PI / 2;
+      dust.rotation.z = rot;
+      dust.position.set(x, -0.068, z);
+      world.add(dust);
     }
   }
 

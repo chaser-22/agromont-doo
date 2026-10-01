@@ -1,0 +1,125 @@
+name: Build photoreal environment assets
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - feat/final-photoreal-materials-lighting
+    paths:
+      - "scripts/fetch-photoreal-assets.mjs"
+      - ".github/workflows/build-photoreal-environment.yml"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: photoreal-assets-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-environment-assets:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Download CC0 scanned PBR maps and industrial HDRI
+        run: node scripts/fetch-photoreal-assets.mjs
+
+      - name: Verify required assets
+        run: |
+          set -euxo pipefail
+          test -f public/assets/photoreal/asphalt-basecolor.jpg
+          test -f public/assets/photoreal/asphalt-normal.jpg
+          test -f public/assets/photoreal/asphalt-roughness.jpg
+          test -f public/assets/photoreal/concrete-basecolor.jpg
+          test -f public/assets/photoreal/concrete-normal.jpg
+          test -f public/assets/photoreal/concrete-roughness.jpg
+          test -f public/assets/photoreal/corrugated-basecolor.jpg
+          test -f public/assets/photoreal/corrugated-normal.jpg
+          test -f public/assets/photoreal/corrugated-roughness.jpg
+          test -f public/assets/photoreal/industrial-overcast.hdr
+
+      - name: Install Khronos KTX-Software
+        run: |
+          set -euxo pipefail
+          curl -L --fail --retry 4 --retry-delay 2 \
+            -o /tmp/ktx.deb \
+            https://github.com/KhronosGroup/KTX-Software/releases/download/v4.4.2/KTX-Software-4.4.2-Linux-x86_64.deb
+          sudo dpkg -i /tmp/ktx.deb
+          command -v toktx
+          toktx --version
+
+      - name: Compress scanned PBR maps to KTX2
+        run: |
+          set -euxo pipefail
+          dir=public/assets/photoreal
+          for prefix in asphalt concrete corrugated; do
+            toktx --t2 --genmipmap --encode basis-lz --qlevel 220 --assign_oetf srgb \
+              "$dir/${prefix}-basecolor.ktx2" "$dir/${prefix}-basecolor.jpg"
+            toktx --t2 --genmipmap --encode uastc --uastc_quality 2 --zcmp 10 --normal_mode \
+              "$dir/${prefix}-normal.ktx2" "$dir/${prefix}-normal.jpg"
+            toktx --t2 --genmipmap --encode basis-lz --qlevel 255 --assign_oetf linear \
+              "$dir/${prefix}-roughness.ktx2" "$dir/${prefix}-roughness.jpg"
+          done
+          rm "$dir"/*.jpg
+
+          for prefix in asphalt concrete corrugated; do
+            test -f "$dir/${prefix}-basecolor.ktx2"
+            test -f "$dir/${prefix}-normal.ktx2"
+            test -f "$dir/${prefix}-roughness.ktx2"
+          done
+
+      - name: Refresh optimized asset manifest
+        run: |
+          node - <<'NODE'
+          const fs = require('fs');
+          const path = require('path');
+          const dir = 'public/assets/photoreal';
+          const old = JSON.parse(fs.readFileSync(path.join(dir,'manifest.json'),'utf8'));
+          const files = fs.readdirSync(dir)
+            .filter(f => f.endsWith('.ktx2') || f.endsWith('.hdr'))
+            .sort()
+            .map(file => ({
+              filename: file,
+              bytes: fs.statSync(path.join(dir,file)).size,
+              url: '/assets/photoreal/' + file
+            }));
+          old.optimization = {
+            textureContainer: 'KTX2/Basis Universal',
+            colorEncoding: 'ETC1S',
+            normalEncoding: 'UASTC + Zstd',
+            mipmaps: true,
+            hdri: '1K RGBE'
+          };
+          old.files = files;
+          fs.writeFileSync(path.join(dir,'manifest.json'), JSON.stringify(old,null,2));
+          console.log(JSON.stringify(files,null,2));
+          NODE
+
+      - name: Commit production environment assets
+        if: github.event_name == 'push'
+        run: |
+          set -euxo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/assets/photoreal
+          if git diff --cached --quiet; then
+            echo "No environment asset changes."
+          else
+            git commit -m "Add scanned photoreal environment assets"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi
+
+      - name: Upload environment asset artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: agromont-photoreal-environment-assets
+          path: public/assets/photoreal/
+          if-no-files-found: error
+          retention-days: 14

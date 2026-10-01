@@ -188,38 +188,140 @@ def build_truck(M):
     objs=[]
     opaque=[]
     glass=[]
-    profile=[(-3.55,0.68),(-3.50,1.05),(-3.16,2.30),(-2.78,2.66),(-2.34,2.78),(-1.42,2.74),(-1.12,2.46),(-1.10,0.68)]
-    cab=extrude_profile("TruckCab", profile, 2.06, M["white"], .055); objs.append(cab); opaque.append(cab)
+
+    # European medium-duty rigid box truck proportions, based on the stronger
+    # live silhouette rather than the rejected first Blender pass.
+    profile=[
+        (-3.54,0.70),(-3.48,1.02),(-3.36,1.42),(-3.05,2.40),
+        (-2.72,2.70),(-1.42,2.70),(-1.20,2.43),(-1.16,0.70)
+    ]
+    cab=extrude_profile("TruckCab", profile, 2.08, M["white"], .05)
+    objs.append(cab); opaque.append(cab)
+
+    # Windscreen and black surround give the cab a manufactured shell rather
+    # than a glass rectangle stuck on a box.
+    wind=add_box("Windscreen",(-3.075,2.02,0),(0.045,0.82,1.70),M["glass"],.008,2,rot=(0,0,-0.275))
+    glass.append(wind); objs.append(wind)
+    surround_top=add_box("WindscreenTop",(-2.94,2.46,0),(0.07,0.07,1.83),M["dark"],.01,2,rot=(0,0,-0.275))
+    opaque.append(surround_top); objs.append(surround_top)
+    divider=add_box("WindscreenDivider",(-3.11,2.02,0),(0.065,0.84,0.04),M["dark"],.008,2,rot=(0,0,-0.275))
+    opaque.append(divider); objs.append(divider)
+
+    # Deep front fascia, grille, bumper and separate lamps.
+    fascia=add_box("FrontFascia",(-3.49,1.18,0),(0.08,0.86,1.70),M["white"],.018,2)
+    opaque.append(fascia); objs.append(fascia)
+    bumper=add_box("Bumper",(-3.60,0.78,0),(0.22,0.24,2.10),M["dark"],.035,3)
+    opaque.append(bumper); objs.append(bumper)
+    lower=add_box("LowerValance",(-3.51,0.98,0),(0.07,0.28,1.76),M["dark"],.018,2)
+    opaque.append(lower); objs.append(lower)
+    grille=add_box("Grille",(-3.535,1.28,0),(0.035,0.46,1.08),M["dark"],.008,1)
+    opaque.append(grille); objs.append(grille)
+    for i in range(8):
+        sl=add_box("GrilleSlat",(-3.558,1.105+i*.052,0),(0.018,0.018,1.01),M["galv"],0,1)
+        opaque.append(sl); objs.append(sl)
+    plate=add_box("LicensePlate",(-3.62,0.86,0),(0.025,0.14,0.44),M["white"],.006,1)
+    opaque.append(plate); objs.append(plate)
+
+    for z in (-.74,.74):
+        lamp=add_box("HeadLamp",(-3.575,1.50,z),(.07,.23,.34),M["light"],.018,3)
+        opaque.append(lamp); objs.append(lamp)
+        indicator=add_box("Indicator",(-3.582,1.34,z*1.02),(.065,.09,.25),M["light"],.012,2)
+        opaque.append(indicator); objs.append(indicator)
+
+    visor=add_box("Visor",(-2.92,2.55,0),(0.50,0.07,1.92),M["dark"],.018,2,rot=(0,0,-.15))
+    opaque.append(visor); objs.append(visor)
+
+    # Realistic doors, glazing, mirrors and entry hardware on both sides.
     for z in (-1.045,1.045):
-        sw=add_box("SideWindow",(-2.18,2.03,z),(0.90,0.62,0.028),M["glass"],.012,2); glass.append(sw); objs.append(sw)
-        mirror=add_box("Mirror",(-3.02,2.26,z*1.23),(0.18,0.34,0.11),M["dark"],.025,2); opaque.append(mirror); objs.append(mirror)
-        arm=add_pipe("MirrorArm",(-2.90,2.28,z*1.02),(-3.00,2.28,z*1.18),.024,M["dark"],12); opaque.append(arm); objs.append(arm)
-        step=add_box("CabStep",(-1.56,0.72,z*1.08),(0.78,0.10,0.25),M["galv"],.018,2); opaque.append(step); objs.append(step)
-    wind=add_box("Windscreen",(-3.08,2.02,0),(0.05,0.82,1.72),M["glass"],.01,2,rot=(0,0,-0.27)); glass.append(wind); objs.append(wind)
-    bumper=add_box("Bumper",(-3.60,0.78,0),(0.22,0.24,2.08),M["dark"],.035,2); opaque.append(bumper); objs.append(bumper)
-    grille=add_box("Grille",(-3.49,1.14,0),(0.05,0.52,1.20),M["dark"],.01,1); opaque.append(grille); objs.append(grille)
-    for i in range(7):
-        s=add_box("GrilleSlat",(-3.525,0.95+i*.065,0),(0.025,0.025,1.05),M["galv"],0,1); opaque.append(s); objs.append(s)
-    visor=add_box("Visor",(-2.91,2.55,0),(0.48,0.07,1.90),M["dark"],.018,2,rot=(0,0,-.15)); opaque.append(visor); objs.append(visor)
-    chassis=add_box("Chassis",(0.15,0.60,0),(6.9,0.23,1.70),M["dark"],.025,2); opaque.append(chassis); objs.append(chassis)
-    cargo=add_box("CargoBox",(1.35,1.90,0),(5.35,2.30,2.15),M["white"],.045,3); opaque.append(cargo); objs.append(cargo)
-    fair=extrude_profile("RoofFairing",[(-1.50,2.62),(-.92,3.15),(-.10,3.15),(-.10,2.62)],1.98,M["white"],.035); opaque.append(fair); objs.append(fair)
+        sw=add_box("SideWindow",(-2.18,2.03,z),(0.90,0.62,0.028),M["glass"],.012,2)
+        glass.append(sw); objs.append(sw)
+        door=add_box("DoorSkin",(-2.08,1.48,z*1.012),(1.10,1.62,0.026),M["white"],.012,2)
+        opaque.append(door); objs.append(door)
+        belt=add_box("WindowBelt",(-2.17,1.71,z*1.025),(1.02,0.045,0.035),M["dark"],.006,1)
+        opaque.append(belt); objs.append(belt)
+        handle=add_box("DoorHandle",(-1.72,1.63,z*1.04),(0.22,0.045,0.045),M["dark"],.008,2)
+        opaque.append(handle); objs.append(handle)
+        mirror=add_box("Mirror",(-3.02,2.26,z*1.23),(0.18,0.34,0.11),M["dark"],.025,2)
+        opaque.append(mirror); objs.append(mirror)
+        arm=add_pipe("MirrorArm",(-2.90,2.28,z*1.02),(-3.00,2.28,z*1.18),.024,M["dark"],12)
+        opaque.append(arm); objs.append(arm)
+        step=add_box("CabStep",(-1.58,0.72,z*1.08),(0.82,0.10,0.25),M["galv"],.018,2)
+        opaque.append(step); objs.append(step)
+        lower_step=add_box("LowerStep",(-1.78,0.53,z*1.08),(0.52,0.08,0.22),M["dark"],.014,2)
+        opaque.append(lower_step); objs.append(lower_step)
+
+    chassis=add_box("Chassis",(0.20,0.60,0),(6.95,0.23,1.72),M["dark"],.025,2)
+    opaque.append(chassis); objs.append(chassis)
+
+    # Box body with actual roof/floor rails and rear-door hardware.
+    cargo=add_box("CargoBox",(1.35,1.90,0),(5.35,2.30,2.15),M["white"],.04,3)
+    opaque.append(cargo); objs.append(cargo)
     for z in (-1.09,1.09):
-        guard=add_box("SideGuard",(1.25,.63,z),(4.55,.11,.075),M["galv"],.015,2); opaque.append(guard); objs.append(guard)
-    for x in (-2.35,.28,2.55):
+        toprail=add_box("CargoTopRail",(1.35,3.04,z),(5.38,.07,.05),M["galv"],.012,2)
+        botrail=add_box("CargoBottomRail",(1.35,.76,z),(5.38,.07,.05),M["galv"],.012,2)
+        opaque.extend([toprail,botrail]); objs.extend([toprail,botrail])
+
+    for x in [-.95,-.28,.39,1.06,1.73,2.40,3.07]:
+        for z in (-1.095,1.095):
+            rib=add_box("CargoRib",(x,1.90,z),(.04,2.12,.035),M["galv"],.006,1)
+            opaque.append(rib); objs.append(rib)
+
+    # Rear doors/hinges are camera-visible late in the logistics shot.
+    for z in (-.53,.53):
+        rear_door=add_box("RearDoor",(4.035,1.91,z),(.045,2.05,1.00),M["white"],.012,2)
+        opaque.append(rear_door); objs.append(rear_door)
+        for y in (1.12,2.67):
+            hinge=add_box("RearHinge",(4.065,y,z),(.055,.12,.16),M["dark"],.01,2)
+            opaque.append(hinge); objs.append(hinge)
+        bar=add_pipe("RearLock",(4.075,.98,z),(4.075,2.84,z),.025,M["dark"],10)
+        opaque.append(bar); objs.append(bar)
+
+    fair=extrude_profile("RoofFairing",[(-1.50,2.62),(-.90,3.14),(-.12,3.14),(-.12,2.62)],1.98,M["white"],.035)
+    opaque.append(fair); objs.append(fair)
+
+    for z in (-.96,.96):
+        guard=add_box("SideGuard",(1.25,.63,z),(4.55,.11,.075),M["galv"],.015,2)
+        opaque.append(guard); objs.append(guard)
+
+    # Three axles with tread, hubs, lug nuts and compact mudflaps.
+    axle_x=(-2.35,.28,2.55)
+    for x in axle_x:
         for z in (-1.08,1.08):
-            tire=add_cyl("Tire",(x,.47,z),.46,.31,M["rubber"],48,rot=(math.pi/2,0,0),bevel=.028); opaque.append(tire); objs.append(tire)
-            hub=add_cyl("Hub",(x,.47,z*1.01),.19,.325,M["galv"],32,rot=(math.pi/2,0,0),bevel=.018); opaque.append(hub); objs.append(hub)
-            for k in range(16):
-                ang=2*math.pi*k/16
-                tread=add_box("Tread",(x+math.cos(ang)*.465,.47+math.sin(ang)*.465,z),(0.12,.045,.32),M["rubber"],.008,1,rot=(0,0,ang)); opaque.append(tread); objs.append(tread)
+            tire=add_cyl("Tire",(x,.47,z),.46,.31,M["rubber"],56,rot=(math.pi/2,0,0),bevel=.028)
+            opaque.append(tire); objs.append(tire)
+            hub=add_cyl("Hub",(x,.47,z*1.01),.19,.325,M["galv"],36,rot=(math.pi/2,0,0),bevel=.018)
+            opaque.append(hub); objs.append(hub)
+            for k in range(18):
+                ang=2*math.pi*k/18
+                tread=add_box("Tread",(x+math.cos(ang)*.466,.47+math.sin(ang)*.466,z),(0.11,.042,.32),M["rubber"],.006,1,rot=(0,0,ang))
+                opaque.append(tread); objs.append(tread)
+            for k in range(6):
+                ang=2*math.pi*k/6
+                lug=add_cyl("Lug",(x+math.cos(ang)*.115,.47+math.sin(ang)*.115,z*1.018),.018,.03,M["dark"],10,rot=(math.pi/2,0,0),bevel=.004)
+                opaque.append(lug); objs.append(lug)
+
+    for x in (.28,2.55):
+        for z in (-1.02,1.02):
+            flap=add_box("Mudflap",(x+.42,.40,z),(.10,.58,.34),M["rubber"],.008,1)
+            opaque.append(flap); objs.append(flap)
+
+    # Tanks, exhaust, marker lamps and branded side panel.
     for z in (-.92,.92):
-        tank=add_cyl("Tank",(-.75,.86,z),.26,1.15,M["galv"],32,rot=(0,math.pi/2,0),bevel=.02); opaque.append(tank); objs.append(tank)
-    exhaust=add_pipe("Exhaust",(-1.32,.85,.92),(-1.32,2.68,.92),.07,M["dark"],16); opaque.append(exhaust); objs.append(exhaust)
-    for z in (-.73,.73):
-        lamp=add_box("HeadLamp",(-3.56,1.39,z),(.08,.22,.34),M["light"],.018,2); opaque.append(lamp); objs.append(lamp)
-    rear=add_box("RearBar",(4.03,.65,0),(.18,.22,2.05),M["dark"],.025,2); opaque.append(rear); objs.append(rear)
-    logo=add_box("BrandPanel",(1.65,2.0,1.095),(2.5,.72,.025),M["green"],.012,2); opaque.append(logo); objs.append(logo)
+        tank=add_cyl("Tank",(-.72,.86,z),.26,1.15,M["galv"],36,rot=(0,math.pi/2,0),bevel=.02)
+        opaque.append(tank); objs.append(tank)
+    exhaust=add_pipe("Exhaust",(-1.30,.84,.92),(-1.30,2.66,.92),.07,M["dark"],18)
+    opaque.append(exhaust); objs.append(exhaust)
+
+    for x in (-.40,.80,2.00,3.20):
+        for z in (-1.115,1.115):
+            marker=add_box("MarkerLamp",(x,1.02,z),(.12,.07,.035),M["light"],.008,2)
+            opaque.append(marker); objs.append(marker)
+
+    rear=add_box("RearBar",(4.10,.65,0),(.18,.22,2.05),M["dark"],.025,2)
+    opaque.append(rear); objs.append(rear)
+    logo=add_box("BrandPanel",(1.65,2.0,1.095),(2.5,.72,.025),M["green"],.012,2)
+    opaque.append(logo); objs.append(logo)
+
     return objs, opaque, glass
 
 def build_grader(M):
