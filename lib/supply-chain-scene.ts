@@ -9,6 +9,11 @@ import {
   createSignTexture,
   createTerrainBackdrop,
 } from "@/lib/industrial-detail-kit";
+import {
+  createUltraEggGrader,
+  createUltraProcessSkid,
+  createUltraRigidTruck,
+} from "@/lib/ultra-hero-assets";
 
 export type SupplySceneOptions = {
   mobile: boolean;
@@ -186,36 +191,35 @@ function createBollards(THREE: any, material: any, positions: Array<[number, num
 }
 
 function createSkyDome(THREE: any) {
-  const material = new THREE.ShaderMaterial({
+  const geometry = new THREE.SphereGeometry(70, 32, 16);
+  const positions = geometry.getAttribute("position");
+  const colors = new Float32Array(positions.count * 3);
+  const top = new THREE.Color(0x78909d);
+  const horizon = new THREE.Color(0xd8d1bd);
+  const ground = new THREE.Color(0x66675d);
+  const color = new THREE.Color();
+
+  for (let i = 0; i < positions.count; i++) {
+    const y = positions.getY(i) / 70;
+    if (y >= 0) {
+      const t = Math.min(1, Math.max(0, (y - 0.02) / 0.70));
+      color.copy(horizon).lerp(top, t * t * (3 - 2 * t));
+    } else {
+      const t = Math.min(1, Math.max(0, (y + 0.28) / 0.32));
+      color.copy(ground).lerp(horizon, t * t * (3 - 2 * t));
+    }
+    colors[i * 3] = color.r;
+    colors[i * 3 + 1] = color.g;
+    colors[i * 3 + 2] = color.b;
+  }
+
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+  const material = new THREE.MeshBasicMaterial({
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x78909d) },
-      horizonColor: { value: new THREE.Color(0xd8d1bd) },
-      groundColor: { value: new THREE.Color(0x66675d) },
-    },
-    vertexShader: `
-      varying vec3 vWorld;
-      void main() {
-        vec4 world = modelMatrix * vec4(position, 1.0);
-        vWorld = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vWorld;
-      uniform vec3 topColor;
-      uniform vec3 horizonColor;
-      uniform vec3 groundColor;
-      void main() {
-        float h = normalize(vWorld).y;
-        vec3 upper = mix(horizonColor, topColor, smoothstep(0.02, 0.72, h));
-        vec3 finalColor = mix(groundColor, upper, smoothstep(-0.28, 0.04, h));
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `,
+    vertexColors: true,
   });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 16), material);
+  const dome = new THREE.Mesh(geometry, material);
   dome.position.y = 3;
   return dome;
 }
@@ -224,6 +228,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const { mobile, lowPower } = options;
   const shadows = !mobile;
   const detailOptions = { mobile, lowPower, shadows };
+  const useUltraAssets = !mobile && !lowPower;
   const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower);
 
   const materials = {
@@ -877,6 +882,18 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
   }
 
+  if (useUltraAssets) {
+    dustCollector.visible = false;
+    loadOut.visible = false;
+    processVessels.forEach((vessel) => {
+      vessel.visible = false;
+    });
+
+    const ultraProcessSkid = createUltraProcessSkid(THREE, materials, detailOptions);
+    ultraProcessSkid.position.set(0.05, 0, 0.15);
+    feedMill.add(ultraProcessSkid);
+  }
+
   const pelletGeometry = new THREE.CylinderGeometry(0.045, 0.045, 0.16, 8);
   const pelletCount = lowPower ? 22 : mobile ? 38 : 76;
   const pellets = new THREE.InstancedMesh(pelletGeometry, materials.amber, pelletCount);
@@ -1133,6 +1150,22 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   packerWindow.position.set(3.01, 1.02, 1.95);
   sorting.add(packerWindow);
 
+  let animatedEggs = eggs;
+  if (useUltraAssets) {
+    grader.visible = false;
+    scannerArch.visible = false;
+    packer.visible = false;
+    packerTop.visible = false;
+    controlBox.visible = false;
+    statusLamp.visible = false;
+    packerWindow.visible = false;
+
+    const ultraGrader = createUltraEggGrader(THREE, materials, detailOptions);
+    ultraGrader.position.set(-0.05, 0, 3.05);
+    sorting.add(ultraGrader);
+    animatedEggs = ultraGrader.userData.eggs ?? eggs;
+  }
+
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);
   palletA.position.set(4.25, 0, 0.6);
   sorting.add(palletA);
@@ -1265,8 +1298,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
     pellets.instanceMatrix.needsUpdate = true;
 
-    eggs.forEach((egg, index) => {
-      const t = ((index / eggs.length) + elapsed * 0.033) % 1;
+    animatedEggs.forEach((egg: any, index: number) => {
+      const t = ((index / animatedEggs.length) + elapsed * 0.033) % 1;
       egg.position.x = -3.9 + t * 7.05;
       egg.position.y = 1.46 + Math.sin(t * Math.PI * 8) * 0.012;
       egg.rotation.z = t * 0.24;
