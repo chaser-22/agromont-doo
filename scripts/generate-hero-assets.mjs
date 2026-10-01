@@ -170,7 +170,7 @@ function addTorus(g, R, r, pos, major=18, minor=6, rot=[0,0,0]) {
     g.i.push(p0,p1,p2,p0,p2,p3);
   }
 }
-function addEgg(g, pos, scale=.26) {
+function addEgg(g, pos, scale=.065) {
   const ys=[-.58,-.50,-.30,0,.25,.45,.58].map(v=>v*scale);
   const rs=[.02,.21,.34,.40,.34,.20,.015].map(v=>v*scale);
   const seg=16, start=g.p.length/3;
@@ -194,7 +194,7 @@ function grader(high=true) {
   for(let r=0;r<rows;r++){const z=(r-(rows-1)/2)*.22;addBox(use("dark"),[8.3,.07,.11],[-.1,1.16,z]);addBox(use("stainless"),[8.2,.035,.025],[-.1,1.34,z+.075]);}
   for(let c=0;c<cols;c++){const x=-4.05+c*(7.8/(cols-1));for(let r=0;r<rows;r++){const z=(r-(rows-1)/2)*.22;addCylinder(use("stainless"),.058,.17,[x,1.21,z],10,[Math.PI/2,0,0]);if(high&&c%3===0)addTorus(use("dark"),.078,.014,[x,1.30,z],12,6,[Math.PI/2,0,0]);}}
   const eggs=high?20:10;
-  for(let e=0;e<eggs;e++){const z=((e%rows)-(rows-1)/2)*.22;addEgg(use("egg"),[-3.78+e*(7.05/(eggs-1)),1.47,z]);}
+  for(let e=0;e<eggs;e++){const z=((e%rows)-(rows-1)/2)*.22;addEgg(use("egg"),[-3.78+e*(7.05/(eggs-1)),1.35,z]);}
   addBox(use("stainless"),[.78,.44,1.70],[-3.95,1.64,0]); addBox(use("stainless"),[1.24,.23,1.80],[-.56,1.94,0]);
   addBox(use("glass"),[.82,.18,.035],[-.56,1.92,.92]); addBox(use("white"),[.62,1.02,.38],[2.62,1.26,-1.04]); addBox(use("glass"),[.36,.22,.035],[2.62,1.48,-1.235]);
   addCylinder(use("dark"),.24,.58,[4.14,.90,.96],18,[0,Math.PI/2,0]);
