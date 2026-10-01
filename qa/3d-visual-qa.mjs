@@ -170,6 +170,8 @@ for (const profile of profiles) {
   let previous = null;
   let maxCameraStep = 0;
   let maxTargetStep = 0;
+  let maxCameraRate = 0;
+  let maxTargetRate = 0;
   let maxFovStep = 0;
 
   try {
@@ -231,8 +233,13 @@ for (const profile of profiles) {
       }
 
       if (previous) {
-        maxCameraStep = Math.max(maxCameraStep, distance(snapshot.camera.position, previous.camera.position));
-        maxTargetStep = Math.max(maxTargetStep, distance(snapshot.camera.target, previous.camera.target));
+        const deltaProgress = Math.max(0.000001, progress - previous.progress);
+        const cameraStep = distance(snapshot.camera.position, previous.camera.position);
+        const targetStep = distance(snapshot.camera.target, previous.camera.target);
+        maxCameraStep = Math.max(maxCameraStep, cameraStep);
+        maxTargetStep = Math.max(maxTargetStep, targetStep);
+        maxCameraRate = Math.max(maxCameraRate, cameraStep / deltaProgress);
+        maxTargetRate = Math.max(maxTargetRate, targetStep / deltaProgress);
         maxFovStep = Math.max(maxFovStep, Math.abs(snapshot.camera.fov - previous.camera.fov));
       }
       previous = snapshot;
@@ -310,11 +317,11 @@ for (const profile of profiles) {
       );
     }
 
-    if (maxCameraStep > 4.5) {
-      report.failures.push(`${profile.name}: camera step discontinuity ${maxCameraStep.toFixed(3)}`);
+    if (maxCameraRate > 190) {
+      report.failures.push(`${profile.name}: camera motion rate discontinuity ${maxCameraRate.toFixed(1)} units/progress`);
     }
-    if (maxTargetStep > 4.5) {
-      report.failures.push(`${profile.name}: target step discontinuity ${maxTargetStep.toFixed(3)}`);
+    if (maxTargetRate > 130) {
+      report.failures.push(`${profile.name}: target motion rate discontinuity ${maxTargetRate.toFixed(1)} units/progress`);
     }
     if (maxFovStep > 3.2) {
       report.failures.push(`${profile.name}: FOV step discontinuity ${maxFovStep.toFixed(3)}`);
@@ -333,6 +340,8 @@ for (const profile of profiles) {
         sampleCount: samples.length,
         maxCameraStep,
         maxTargetStep,
+        maxCameraRate,
+        maxTargetRate,
         maxFovStep,
       },
       capture: {
@@ -396,6 +405,8 @@ const cards = report.profiles.map((profile) => {
         Triangles: <strong>${last?.renderer?.triangles ?? "?"}</strong><br>
         Camera max step: <strong>${profile.motion.maxCameraStep.toFixed(3)}</strong> ·
         Target max step: <strong>${profile.motion.maxTargetStep.toFixed(3)}</strong> ·
+        Camera rate: <strong>${profile.motion.maxCameraRate.toFixed(1)}</strong> ·
+        Target rate: <strong>${profile.motion.maxTargetRate.toFixed(1)}</strong> ·
         FOV max step: <strong>${profile.motion.maxFovStep.toFixed(3)}</strong><br>
         Samples: <strong>${profile.motion.sampleCount}</strong> ·
         Avg render: <strong>${profile.capture.averageRenderMs.toFixed(0)} ms</strong> ·
