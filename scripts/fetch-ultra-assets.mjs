@@ -10,11 +10,6 @@ const assets = [
     url: "https://cdn.3dassets.dev/assets/32539/v1/model.glb",
     label: "Luton box van with a tail lift",
   },
-  {
-    file: "grader-scanner-cc0.glb",
-    url: "https://cdn.3dassets.dev/assets/34789/v1/model.glb",
-    label: "Parcel scanner arch over a belt",
-  },
 ];
 
 for (const asset of assets) {
