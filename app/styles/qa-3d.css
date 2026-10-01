@@ -1,5 +1,15 @@
 
 /* Deterministic visual-QA surface. Not linked from the public site. */
+
+.qa-3d-shell .supply-experience.is-qa-mode .supply-canvas,
+.qa-3d-shell .supply-experience.is-qa-mode .supply-fallback {
+  transition: none;
+}
+
+.qa-3d-shell .supply-experience.is-qa-mode.is-ready .supply-fallback {
+  opacity: 0;
+}
+
 .qa-3d-shell {
   width: 100%;
   min-height: 100svh;
