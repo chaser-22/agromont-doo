@@ -166,7 +166,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       const cameraPoints = mobile
         ? [
-            new THREE.Vector3(-21.0, 2.45, 8.6),
+            new THREE.Vector3(-24.6, 3.8, 11.8),
             new THREE.Vector3(-12.9, 4.55, 10.3),
             new THREE.Vector3(1.7, 6.0, 12.5),
             new THREE.Vector3(24.2, 7.2, 15.2),
@@ -175,7 +175,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             new THREE.Vector3(4.0, 18.3, 30.6),
           ]
         : [
-            new THREE.Vector3(-21.4, 1.75, 6.5),
+            new THREE.Vector3(-24.8, 2.9, 9.5),
             new THREE.Vector3(-12.9, 3.45, 7.9),
             new THREE.Vector3(2.4, 4.85, 9.8),
             new THREE.Vector3(23.8, 6.4, 13.0),
