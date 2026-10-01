@@ -12,6 +12,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: blender-assets-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-assets:
     runs-on: ubuntu-24.04
@@ -78,10 +82,10 @@ jobs:
             gltf-transform meshopt "$t1p" "$t2" --level medium
             gltf-transform uastc "$t2" "$t3" \
               --slots "{normalTexture,occlusionTexture,metallicRoughnessTexture}" \
-              --level 4 --rdo --rdo-lambda 4 --zstd 18
+              --level 2 --zstd 10
             gltf-transform etc1s "$t3" "$out" \
               --slots "{baseColorTexture}" \
-              --quality 255
+              --quality 220
             gltf-transform inspect "$out" > ".hero-build/reports/${base}.txt"
           done
 
