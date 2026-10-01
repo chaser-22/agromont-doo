@@ -13,6 +13,7 @@ import {
 export type SupplySceneOptions = {
   mobile: boolean;
   lowPower: boolean;
+  ultra?: boolean;
 };
 
 function clamp01(value: number) {
@@ -230,10 +231,10 @@ function createSkyDome(THREE: any) {
 }
 
 export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
-  const { mobile, lowPower } = options;
+  const { mobile, lowPower, ultra = false } = options;
   const shadows = !mobile;
-  const detailOptions = { mobile, lowPower, shadows };
-  const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower);
+  const detailOptions = { mobile, lowPower, shadows, ultra };
+  const surfaceMaps = createIndustrialSurfaceMaps(THREE, lowPower, ultra);
 
   const materials = {
     siloMetal: new THREE.MeshStandardMaterial({
@@ -245,12 +246,14 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpScale: 0.038,
       envMapIntensity: 0.78,
     }),
-    galvanized: new THREE.MeshStandardMaterial({
-      color: 0x9ba29d,
-      roughness: 0.52,
-      metalness: 0.66,
+    galvanized: new THREE.MeshPhysicalMaterial({
+      color: 0xa3aaa5,
+      roughness: ultra ? 0.46 : 0.52,
+      metalness: 0.68,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 0.78,
+      clearcoat: ultra ? 0.035 : 0,
+      clearcoatRoughness: 0.72,
+      envMapIntensity: ultra ? 0.92 : 0.78,
     }),
     darkMetal: new THREE.MeshStandardMaterial({
       color: 0x1a211d,
@@ -279,12 +282,14 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       side: THREE.DoubleSide,
       envMapIntensity: 0.48,
     }),
-    stainless: new THREE.MeshStandardMaterial({
-      color: 0xc2c6c4,
-      roughness: 0.34,
-      metalness: 0.74,
+    stainless: new THREE.MeshPhysicalMaterial({
+      color: 0xc6cac8,
+      roughness: ultra ? 0.28 : 0.34,
+      metalness: 0.78,
       roughnessMap: surfaceMaps.steelNoise,
-      envMapIntensity: 0.88,
+      clearcoat: ultra ? 0.08 : 0.02,
+      clearcoatRoughness: 0.44,
+      envMapIntensity: ultra ? 1.02 : 0.88,
     }),
     dustBlue: new THREE.MeshStandardMaterial({
       color: 0x195e91,
@@ -323,13 +328,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpMap: surfaceMaps.asphalt,
       bumpScale: 0.035,
     }),
-    offWhite: new THREE.MeshStandardMaterial({
+    offWhite: new THREE.MeshPhysicalMaterial({
       color: 0xe8e1d2,
-      roughness: 0.74,
+      roughness: ultra ? 0.64 : 0.74,
       metalness: 0.02,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.paint,
       bumpScale: 0.012,
+      clearcoat: ultra ? 0.04 : 0,
+      clearcoatRoughness: 0.74,
     }),
     hallPanel: new THREE.MeshStandardMaterial({
       color: 0xcecdc3,
@@ -347,13 +354,15 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
       bumpMap: surfaceMaps.corrugation,
       bumpScale: 0.025,
     }),
-    trailer: new THREE.MeshStandardMaterial({
-      color: 0xd5d3c9,
-      roughness: 0.69,
-      metalness: 0.10,
+    trailer: new THREE.MeshPhysicalMaterial({
+      color: 0xdad8ce,
+      roughness: ultra ? 0.58 : 0.69,
+      metalness: 0.08,
       roughnessMap: surfaceMaps.paint,
       bumpMap: surfaceMaps.corrugation,
       bumpScale: 0.02,
+      clearcoat: ultra ? 0.07 : 0.02,
+      clearcoatRoughness: 0.68,
     }),
     carton: new THREE.MeshStandardMaterial({
       color: 0x8b806d,
@@ -1101,10 +1110,42 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     }
   }
 
-  const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.58, 18), materials.darkMetal);
+  const driveMotor = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.58, ultra ? 28 : 18), materials.darkMetal);
   driveMotor.rotation.z = Math.PI / 2;
   driveMotor.position.set(4.24, 0.88, graderZ + 0.95);
   grader.add(driveMotor);
+
+  if (ultra) {
+    const cableGeo = new THREE.CylinderGeometry(0.018, 0.018, 1.35, 8);
+    for (const [x, z, tilt] of [
+      [-2.8, graderZ + 0.82, 0.20],
+      [-0.6, graderZ - 0.82, -0.16],
+      [1.7, graderZ + 0.82, 0.12],
+    ] as const) {
+      const cable = new THREE.Mesh(cableGeo, materials.darkMetal);
+      cable.position.set(x, 1.02, z);
+      cable.rotation.z = tilt;
+      grader.add(cable);
+      const junction = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.24, 0.12), materials.darkMetal);
+      junction.position.set(x, 1.58, z);
+      grader.add(junction);
+    }
+
+    const serviceRailGeo = new THREE.BoxGeometry(0.045, 0.52, 0.045);
+    const servicePosts = new THREE.InstancedMesh(serviceRailGeo, materials.stainless, 12);
+    const serviceDummy = new THREE.Object3D();
+    for (let i = 0; i < 6; i++) {
+      const x = -3.5 + i * 1.35;
+      for (const z of [graderZ - 0.93, graderZ + 0.93]) {
+        const idx = i * 2 + (z > graderZ ? 1 : 0);
+        serviceDummy.position.set(x, 1.63, z);
+        serviceDummy.updateMatrix();
+        servicePosts.setMatrixAt(idx, serviceDummy.matrix);
+      }
+    }
+    servicePosts.instanceMatrix.needsUpdate = true;
+    grader.add(servicePosts);
+  }
   sorting.add(grader);
 
   const rollers: any[] = [];
