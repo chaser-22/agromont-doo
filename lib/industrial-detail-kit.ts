@@ -91,6 +91,42 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     }
     concreteCtx.stroke();
   }
+  concreteCtx.globalCompositeOperation = "multiply";
+  for (let i = 0; i < 9; i++) {
+    const cx = concreteRandom() * size;
+    const cy = concreteRandom() * size;
+    const r = size * (0.05 + concreteRandom() * 0.12);
+    const stain = concreteCtx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    stain.addColorStop(0, "rgba(72,67,58,.22)");
+    stain.addColorStop(1, "rgba(72,67,58,0)");
+    concreteCtx.fillStyle = stain;
+    concreteCtx.fillRect(cx - r, cy - r, r * 2, r * 2);
+  }
+  concreteCtx.globalCompositeOperation = "source-over";
+
+  const asphaltCanvas = document.createElement("canvas");
+  asphaltCanvas.width = size;
+  asphaltCanvas.height = size;
+  const asphaltCtx = asphaltCanvas.getContext("2d")!;
+  const asphaltRandom = seeded(41);
+  asphaltCtx.fillStyle = "#777";
+  asphaltCtx.fillRect(0, 0, size, size);
+  const asphaltImage = asphaltCtx.getImageData(0, 0, size, size);
+  for (let i = 0; i < asphaltImage.data.length; i += 4) {
+    const base = 82 + Math.round(asphaltRandom() * 60);
+    const aggregate = asphaltRandom() > 0.965 ? 34 : 0;
+    asphaltImage.data[i] = Math.min(190, base + aggregate);
+    asphaltImage.data[i + 1] = Math.min(190, base + aggregate);
+    asphaltImage.data[i + 2] = Math.min(190, base + aggregate - 2);
+    asphaltImage.data[i + 3] = 255;
+  }
+  asphaltCtx.putImageData(asphaltImage, 0, 0);
+  asphaltCtx.globalAlpha = 0.16;
+  for (let y = 0; y < size; y += 19) {
+    asphaltCtx.fillStyle = "#3d3d3d";
+    asphaltCtx.fillRect(0, y, size, 1);
+  }
+  asphaltCtx.globalAlpha = 1;
 
   const paintCanvas = document.createElement("canvas");
   paintCanvas.width = size;
@@ -104,6 +140,14 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     const v = 100 + Math.round(paintRandom() * 80);
     paintCtx.fillStyle = `rgb(${v},${v},${v})`;
     paintCtx.fillRect(0, y, size, 1);
+  }
+  paintCtx.globalAlpha = 0.14;
+  for (let i = 0; i < 18; i++) {
+    const x = Math.floor(paintRandom() * size);
+    const w = 1 + Math.floor(paintRandom() * 3);
+    const h = Math.floor(size * (0.18 + paintRandom() * 0.58));
+    paintCtx.fillStyle = paintRandom() > 0.5 ? "#555" : "#c2c2c2";
+    paintCtx.fillRect(x, 0, w, h);
   }
   paintCtx.globalAlpha = 1;
 
@@ -140,6 +184,7 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
     steelNoise: canvasTexture(THREE, steelCanvas),
     corrugation: canvasTexture(THREE, corrugationCanvas),
     concrete: canvasTexture(THREE, concreteCanvas),
+    asphalt: canvasTexture(THREE, asphaltCanvas),
     paint: canvasTexture(THREE, paintCanvas),
     rubber: canvasTexture(THREE, rubberCanvas),
     carton: canvasTexture(THREE, cartonCanvas),
@@ -148,6 +193,7 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
   maps.steelNoise.repeat.set(5, 8);
   maps.corrugation.repeat.set(4, 1);
   maps.concrete.repeat.set(8, 5);
+  maps.asphalt.repeat.set(10, 3);
   maps.paint.repeat.set(5, 7);
   maps.rubber.repeat.set(8, 2);
   maps.carton.repeat.set(4, 8);
