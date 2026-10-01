@@ -99,9 +99,9 @@ await Promise.all([
   fetchPolyHavenFile("asphalt_01", (p, u) => is1kJpg(p, u) && /diff|diffuse/.test(p), "asphalt-diffuse.jpg"),
   fetchPolyHavenFile("asphalt_01", (p, u) => is1kJpg(p, u) && /nor[_ -]?gl|normal.*gl/.test(p), "asphalt-normal.jpg"),
   fetchPolyHavenFile("asphalt_01", (p, u) => is1kJpg(p, u) && /rough/.test(p) && !/arm/.test(p), "asphalt-roughness.jpg"),
-  fetchPolyHavenFile("concrete", (p, u) => is1kJpg(p, u) && /diff|diffuse/.test(p), "concrete-diffuse.jpg"),
-  fetchPolyHavenFile("concrete", (p, u) => is1kJpg(p, u) && /nor[_ -]?gl|normal.*gl/.test(p), "concrete-normal.jpg"),
-  fetchPolyHavenFile("concrete", (p, u) => is1kJpg(p, u) && /rough/.test(p) && !/arm/.test(p), "concrete-roughness.jpg"),
+  fetchPolyHavenFile("concrete_floor_01", (p, u) => is1kJpg(p, u) && /diff|diffuse/.test(p), "concrete-diffuse.jpg"),
+  fetchPolyHavenFile("concrete_floor_01", (p, u) => is1kJpg(p, u) && /nor[_ -]?gl|normal.*gl/.test(p), "concrete-normal.jpg"),
+  fetchPolyHavenFile("concrete_floor_01", (p, u) => is1kJpg(p, u) && /rough/.test(p) && !/arm/.test(p), "concrete-roughness.jpg"),
   fetchPolyHavenFile(
     "factory_yard",
     (p, u) => /1k/.test(p) && /\.hdr(\?|$)/i.test(u),
