@@ -47,6 +47,7 @@ function applySet(material: any, set: any, options: { color?: number; roughness?
   material.needsUpdate = true;
 }
 
+// Desktop photoreal tier: local CC0 scan maps + a web-optimized 1K industrial HDRI.
 export async function installPhotorealEnvironment(
   THREE: any,
   renderer: any,
