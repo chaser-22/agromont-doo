@@ -1,5 +1,5 @@
 {
-  "generatedFrom": "73b5bf13aa00378f6c9da2af23f3774226a65717",
+  "generatedFrom": "3dc4e8689401e3c2ede0e1795728427c5f32858f",
   "blender": "5.2.2 LTS",
   "compression": [
     "EXT_meshopt_compression",
@@ -8,47 +8,47 @@
   "assets": [
     {
       "file": "grader-lod0.glb",
-      "bytes": 2154572,
+      "bytes": 2154584,
       "url": "/assets/hero/grader-lod0.glb"
     },
     {
       "file": "grader-lod1.glb",
-      "bytes": 1458600,
+      "bytes": 1461576,
       "url": "/assets/hero/grader-lod1.glb"
     },
     {
       "file": "grader-lod2.glb",
-      "bytes": 1031092,
+      "bytes": 1031024,
       "url": "/assets/hero/grader-lod2.glb"
     },
     {
       "file": "process-skid-lod0.glb",
-      "bytes": 1049140,
+      "bytes": 1049144,
       "url": "/assets/hero/process-skid-lod0.glb"
     },
     {
       "file": "process-skid-lod1.glb",
-      "bytes": 834584,
+      "bytes": 834384,
       "url": "/assets/hero/process-skid-lod1.glb"
     },
     {
       "file": "process-skid-lod2.glb",
-      "bytes": 663820,
+      "bytes": 663900,
       "url": "/assets/hero/process-skid-lod2.glb"
     },
     {
       "file": "truck-lod0.glb",
-      "bytes": 1302024,
+      "bytes": 1302028,
       "url": "/assets/hero/truck-lod0.glb"
     },
     {
       "file": "truck-lod1.glb",
-      "bytes": 1078624,
+      "bytes": 1080164,
       "url": "/assets/hero/truck-lod1.glb"
     },
     {
       "file": "truck-lod2.glb",
-      "bytes": 901380,
+      "bytes": 902720,
       "url": "/assets/hero/truck-lod2.glb"
     }
   ]
