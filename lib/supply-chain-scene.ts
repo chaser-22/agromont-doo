@@ -190,9 +190,9 @@ function createSkyDome(THREE: any) {
     side: THREE.BackSide,
     depthWrite: false,
     uniforms: {
-      topColor: { value: new THREE.Color(0x5f7265) },
-      horizonColor: { value: new THREE.Color(0xb7b7a3) },
-      groundColor: { value: new THREE.Color(0x3a4036) },
+      topColor: { value: new THREE.Color(0x78909d) },
+      horizonColor: { value: new THREE.Color(0xd8d1bd) },
+      groundColor: { value: new THREE.Color(0x66675d) },
     },
     vertexShader: `
       varying vec3 vWorld;
@@ -216,7 +216,7 @@ function createSkyDome(THREE: any) {
     `,
   });
   const dome = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 16), material);
-  dome.position.y = 4;
+  dome.position.y = 3;
   return dome;
 }
 
