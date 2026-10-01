@@ -1114,22 +1114,23 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   scannerArch.position.set(1.15, 0.1, 3.05);
   sorting.add(scannerArch);
 
-  const packer = addShadow(new THREE.Mesh(new THREE.BoxGeometry(2.1, 2.0, 2.0), materials.galvanized), shadows);
-  packer.position.set(3.15, 1.0, 3.05);
+  // Compact terminal packer sits behind the visible grading lanes instead of hiding them.
+  const packer = addShadow(new THREE.Mesh(new THREE.BoxGeometry(1.25, 1.48, 1.28), materials.stainless), shadows);
+  packer.position.set(3.65, 0.82, 1.95);
   sorting.add(packer);
 
-  const packerTop = new THREE.Mesh(new THREE.BoxGeometry(2.28, 0.18, 2.18), materials.darkMetal);
-  packerTop.position.set(3.15, 2.06, 3.05);
+  const packerTop = new THREE.Mesh(new THREE.BoxGeometry(1.38, 0.14, 1.40), materials.darkMetal);
+  packerTop.position.set(3.65, 1.60, 1.95);
   sorting.add(packerTop);
-  const controlBox = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.62, 0.20), materials.darkMetal);
-  controlBox.position.set(2.02, 1.48, 2.10);
+  const controlBox = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.48, 0.16), materials.darkMetal);
+  controlBox.position.set(2.92, 1.20, 2.05);
   sorting.add(controlBox);
-  const statusLamp = new THREE.Mesh(new THREE.SphereGeometry(0.075, 12, 8), materials.lightLens);
-  statusLamp.position.set(2.02, 1.88, 2.10);
+  const statusLamp = new THREE.Mesh(new THREE.SphereGeometry(0.065, 12, 8), materials.lightLens);
+  statusLamp.position.set(2.92, 1.52, 2.05);
   sorting.add(statusLamp);
 
-  const packerWindow = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.72, 1.35), materials.glass);
-  packerWindow.position.set(2.08, 1.22, 3.05);
+  const packerWindow = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.46, 0.78), materials.glass);
+  packerWindow.position.set(3.01, 1.02, 1.95);
   sorting.add(packerWindow);
 
   const palletA = createPalletStack(THREE, materials, shadows, lowPower ? 2 : 4);
