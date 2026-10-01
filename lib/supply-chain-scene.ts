@@ -186,37 +186,46 @@ function createBollards(THREE: any, material: any, positions: Array<[number, num
 }
 
 function createSkyDome(THREE: any) {
-  const material = new THREE.ShaderMaterial({
+  // Renderer-agnostic photographic sky gradient. Avoiding ShaderMaterial keeps
+  // the scene compatible with both WebGPURenderer and WebGLRenderer.
+  const canvas = document.createElement("canvas");
+  canvas.width = 16;
+  canvas.height = 512;
+  const ctx = canvas.getContext("2d")!;
+  const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+  gradient.addColorStop(0.00, "#718996");
+  gradient.addColorStop(0.33, "#9da9a7");
+  gradient.addColorStop(0.55, "#d8d0bb");
+  gradient.addColorStop(0.70, "#9d9b8d");
+  gradient.addColorStop(1.00, "#60665d");
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Very restrained horizon haze so the background does not look like a flat
+  // procedural gradient.
+  const haze = ctx.createLinearGradient(0, 180, 0, 330);
+  haze.addColorStop(0, "rgba(255,246,223,0)");
+  haze.addColorStop(0.48, "rgba(255,242,213,0.16)");
+  haze.addColorStop(1, "rgba(255,246,223,0)");
+  ctx.fillStyle = haze;
+  ctx.fillRect(0, 160, canvas.width, 190);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.ClampToEdgeWrapping;
+  texture.needsUpdate = true;
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
     side: THREE.BackSide,
     depthWrite: false,
-    uniforms: {
-      topColor: { value: new THREE.Color(0x78909d) },
-      horizonColor: { value: new THREE.Color(0xd8d1bd) },
-      groundColor: { value: new THREE.Color(0x66675d) },
-    },
-    vertexShader: `
-      varying vec3 vWorld;
-      void main() {
-        vec4 world = modelMatrix * vec4(position, 1.0);
-        vWorld = world.xyz;
-        gl_Position = projectionMatrix * viewMatrix * world;
-      }
-    `,
-    fragmentShader: `
-      varying vec3 vWorld;
-      uniform vec3 topColor;
-      uniform vec3 horizonColor;
-      uniform vec3 groundColor;
-      void main() {
-        float h = normalize(vWorld).y;
-        vec3 upper = mix(horizonColor, topColor, smoothstep(0.02, 0.72, h));
-        vec3 finalColor = mix(groundColor, upper, smoothstep(-0.28, 0.04, h));
-        gl_FragColor = vec4(finalColor, 1.0);
-      }
-    `,
+    fog: false,
+    toneMapped: false,
   });
-  const dome = new THREE.Mesh(new THREE.SphereGeometry(70, 32, 16), material);
+  const dome = new THREE.Mesh(new THREE.SphereGeometry(78, 48, 24), material);
   dome.position.y = 3;
+  dome.userData.skyTexture = texture;
   return dome;
 }
 
