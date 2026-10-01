@@ -267,9 +267,9 @@ for (const profile of profiles) {
           if (!photoreal?.ready) {
             report.failures.push(`${profile.name}: photoreal material/HDR assets were not ready at progress ${progress}`);
           }
-          if ((photoreal?.loaded?.length ?? 0) !== 4) {
+          if ((photoreal?.loaded?.length ?? 0) !== 3) {
             report.failures.push(
-              `${profile.name}: expected 4 photoreal assets, got ${photoreal?.loaded?.length ?? 0} at progress ${progress}`,
+              `${profile.name}: expected 3 scanned photoreal surface sets in software QA, got ${photoreal?.loaded?.length ?? 0} at progress ${progress}`,
             );
           }
           if ((photoreal?.failed?.length ?? 0) > 0) {
