@@ -2,6 +2,7 @@ type DetailOptions = {
   mobile: boolean;
   lowPower: boolean;
   shadows: boolean;
+  ultra?: boolean;
 };
 
 function addShadow(mesh: any, shadows: boolean) {
@@ -27,8 +28,8 @@ function canvasTexture(THREE: any, canvas: HTMLCanvasElement, color = false) {
   return texture;
 }
 
-export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
-  const size = lowPower ? 128 : 256;
+export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean, ultra = false) {
+  const size = ultra ? 512 : lowPower ? 128 : 256;
 
   const steelCanvas = document.createElement("canvas");
   steelCanvas.width = size;
@@ -198,6 +199,11 @@ export function createIndustrialSurfaceMaps(THREE: any, lowPower: boolean) {
   maps.rubber.repeat.set(8, 2);
   maps.carton.repeat.set(4, 8);
 
+  const anisotropy = ultra ? 12 : lowPower ? 2 : 6;
+  Object.values(maps).forEach((map: any) => {
+    map.anisotropy = anisotropy;
+  });
+
   return {
     ...maps,
     dispose() {
@@ -348,7 +354,7 @@ export function createDetailedSilo(
   const group = new THREE.Group();
 
   const body = addShadow(
-    new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, options.mobile ? 40 : 64), materials.siloMetal),
+    new THREE.Mesh(new THREE.CylinderGeometry(radius, radius, height, options.mobile ? 40 : options.ultra ? 96 : 64), materials.siloMetal),
     options.shadows,
   );
   body.position.y = height / 2;
@@ -362,7 +368,7 @@ export function createDetailedSilo(
   group.add(baseRing);
 
   const roof = addShadow(
-    new THREE.Mesh(new THREE.ConeGeometry(radius * 1.025, radius * 0.92, options.mobile ? 40 : 64), materials.siloMetal),
+    new THREE.Mesh(new THREE.ConeGeometry(radius * 1.025, radius * 0.92, options.mobile ? 40 : options.ultra ? 96 : 64), materials.siloMetal),
     options.shadows,
   );
   roof.position.y = height + radius * 0.44;
@@ -409,6 +415,29 @@ export function createDetailedSilo(
     }
     roofRail.position.y = height + radius * 0.72;
     group.add(roofRail);
+  }
+
+  if (options.ultra) {
+    const boltCount = 28;
+    const boltGeo = new THREE.CylinderGeometry(0.018, 0.018, 0.035, 7);
+    const bolts = new THREE.InstancedMesh(boltGeo, materials.darkMetal, boltCount * 2);
+    const boltDummy = new THREE.Object3D();
+    let boltIndex = 0;
+    for (const y of [height * 0.12, height * 0.58]) {
+      for (let i = 0; i < boltCount; i++) {
+        const a = (i / boltCount) * Math.PI * 2;
+        boltDummy.position.set(
+          Math.cos(a) * radius * 1.015,
+          y,
+          Math.sin(a) * radius * 1.015,
+        );
+        boltDummy.rotation.set(Math.PI / 2, a, 0);
+        boltDummy.updateMatrix();
+        bolts.setMatrixAt(boltIndex++, boltDummy.matrix);
+      }
+    }
+    bolts.instanceMatrix.needsUpdate = true;
+    group.add(bolts);
   }
 
   return group;
@@ -483,7 +512,7 @@ export function createDetailedFarmHall(
   plinth.position.y = 0.12;
   group.add(plinth);
 
-  const bayCount = options.lowPower ? 6 : Math.max(8, Math.round(length / 1.15));
+  const bayCount = options.lowPower ? 6 : options.ultra ? Math.max(14, Math.round(length / 0.72)) : Math.max(8, Math.round(length / 1.15));
   const ribGeo = new THREE.BoxGeometry(0.045, 2.28, 0.045);
   const ribs = new THREE.InstancedMesh(ribGeo, materials.galvanized, bayCount * 2);
   const ribDummy = new THREE.Object3D();
@@ -507,7 +536,7 @@ export function createDetailedFarmHall(
   group.add(ridgeCap);
 
   // Standing seams create real roof scale without separate roof-sheet meshes.
-  const seamPerSlope = options.lowPower ? 3 : options.mobile ? 5 : 7;
+  const seamPerSlope = options.lowPower ? 3 : options.mobile ? 5 : options.ultra ? 11 : 7;
   const roofSeamGeo = new THREE.BoxGeometry(length * 0.955, 0.035, 0.045);
   const roofSeams = new THREE.InstancedMesh(roofSeamGeo, materials.galvanized, seamPerSlope * 2);
   const roofSeamDummy = new THREE.Object3D();
@@ -570,7 +599,7 @@ export function createDetailedFarmHall(
   header.position.set(-length / 2 - 0.10, 1.88, 0);
   group.add(header);
 
-  const fanCount = options.lowPower ? 3 : 5;
+  const fanCount = options.lowPower ? 3 : options.ultra ? 7 : 5;
   const fanFrameGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.10, 24);
   const fanCoreGeo = new THREE.CylinderGeometry(0.09, 0.09, 0.13, 16);
   const fanFrames = new THREE.InstancedMesh(fanFrameGeo, materials.darkMetal, fanCount);
@@ -591,7 +620,7 @@ export function createDetailedFarmHall(
   fanCores.instanceMatrix.needsUpdate = true;
   group.add(fanFrames, fanCores);
 
-  const ridgeCount = options.lowPower ? 2 : 5;
+  const ridgeCount = options.lowPower ? 2 : options.ultra ? 8 : 5;
   const ridgeGeo = new THREE.BoxGeometry(0.8, 0.18, 0.36);
   const ridgeInstances = new THREE.InstancedMesh(ridgeGeo, materials.darkMetal, ridgeCount);
   const ridgeDummy = new THREE.Object3D();
@@ -865,8 +894,8 @@ export function createDetailedTruck(
     }
   }
 
-  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.30, 32);
-  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.32, 20);
+  const wheelGeometry = new THREE.CylinderGeometry(0.46, 0.46, 0.30, options.ultra ? 48 : 32);
+  const hubGeometry = new THREE.CylinderGeometry(0.18, 0.18, 0.32, options.ultra ? 28 : 20);
   for (const x of [-2.36, 0.25, 2.55]) {
     for (const z of [-1.10, 1.10]) {
       const wheel = new THREE.Mesh(wheelGeometry, materials.rubber);
@@ -894,6 +923,48 @@ export function createDetailedTruck(
       const flap = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.62, 0.34), materials.rubber);
       flap.position.set(x + 0.42, 0.42, z);
       group.add(flap);
+    }
+  }
+
+  if (options.ultra) {
+    const wiperGeo = new THREE.BoxGeometry(0.48, 0.018, 0.022);
+    for (const z of [-0.43, 0.43]) {
+      const wiper = new THREE.Mesh(wiperGeo, materials.darkMetal);
+      wiper.position.set(-3.145, 1.88, z);
+      wiper.rotation.z = -0.08;
+      group.add(wiper);
+    }
+
+    const treadGeo = new THREE.BoxGeometry(0.115, 0.035, 0.34);
+    const treadCount = 3 * 2 * 16;
+    const treads = new THREE.InstancedMesh(treadGeo, materials.rubber, treadCount);
+    const treadDummy = new THREE.Object3D();
+    let treadIndex = 0;
+    for (const x of [-2.36, 0.25, 2.55]) {
+      for (const z of [-1.10, 1.10]) {
+        for (let i = 0; i < 16; i++) {
+          const a = (i / 16) * Math.PI * 2;
+          treadDummy.position.set(x + Math.cos(a) * 0.455, 0.47 + Math.sin(a) * 0.455, z);
+          treadDummy.rotation.set(0, 0, a + Math.PI / 2);
+          treadDummy.updateMatrix();
+          treads.setMatrixAt(treadIndex++, treadDummy.matrix);
+        }
+      }
+    }
+    treads.instanceMatrix.needsUpdate = true;
+    group.add(treads);
+
+    const plate = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.16, 0.52), materials.offWhite);
+    plate.position.set(-3.685, 0.82, 0);
+    group.add(plate);
+
+    const hingeGeo = new THREE.BoxGeometry(0.06, 0.18, 0.05);
+    for (const z of [-0.86, 0.86]) {
+      for (const y of [1.15, 2.62]) {
+        const hinge = new THREE.Mesh(hingeGeo, materials.darkMetal);
+        hinge.position.set(3.945, y, z);
+        group.add(hinge);
+      }
     }
   }
 
