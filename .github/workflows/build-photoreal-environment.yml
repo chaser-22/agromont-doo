@@ -40,6 +40,9 @@ jobs:
           test -f public/assets/photoreal/concrete-basecolor.jpg
           test -f public/assets/photoreal/concrete-normal.jpg
           test -f public/assets/photoreal/concrete-roughness.jpg
+          test -f public/assets/photoreal/corrugated-basecolor.jpg
+          test -f public/assets/photoreal/corrugated-normal.jpg
+          test -f public/assets/photoreal/corrugated-roughness.jpg
           test -f public/assets/photoreal/industrial-overcast.hdr
 
       - name: Commit production environment assets
