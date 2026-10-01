@@ -237,10 +237,10 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       const supplyScene = buildSupplyChainScene(THREE, { mobile, lowPower, assetQuality });
       scene.add(supplyScene.world);
 
-      const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.98);
+      const hemi = new THREE.HemisphereLight(0xe7edf0, 0x4b493e, mobile ? 0.82 : 0.78);
       scene.add(hemi);
 
-      const sun = new THREE.DirectionalLight(0xffe1ad, mobile ? 2.15 : webGPUActive ? 3.22 : 3.05);
+      const sun = new THREE.DirectionalLight(0xffe7c2, mobile ? 2.15 : webGPUActive ? 2.88 : 2.72);
       sun.position.set(-15, 20, 10);
       sun.target.position.set(2, 0.8, 0);
       sun.castShadow = !mobile;
@@ -257,19 +257,19 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       }
       scene.add(sun, sun.target);
 
-      const coolFill = new THREE.DirectionalLight(0xa9bcc3, mobile ? 0.28 : 0.36);
+      const coolFill = new THREE.DirectionalLight(0xa9bcc3, mobile ? 0.28 : 0.20);
       coolFill.position.set(21, 11, -16);
       scene.add(coolFill);
 
-      const warmBounce = new THREE.DirectionalLight(0xd2a477, mobile ? 0.16 : 0.24);
+      const warmBounce = new THREE.DirectionalLight(0xd2a477, mobile ? 0.16 : 0.14);
       warmBounce.position.set(-8, 4, 18);
       scene.add(warmBounce);
 
-      const processLight = new THREE.PointLight(0xf0a128, mobile ? 2.6 : 4.2, 15, 2);
+      const processLight = new THREE.PointLight(0xf0a128, mobile ? 2.6 : 3.25, 15, 2);
       processLight.position.set(2.0, 4.8, 1.5);
       scene.add(processLight);
 
-      const gradingLight = new THREE.SpotLight(0xffddb1, mobile ? 3.2 : 5.2, 19, Math.PI / 6.0, 0.66, 1.5);
+      const gradingLight = new THREE.SpotLight(0xffddb1, mobile ? 3.2 : 4.15, 19, Math.PI / 6.0, 0.66, 1.5);
       gradingLight.position.set(14.6, 6.7, 15.2);
       gradingLight.target.position.set(14.8, 1.0, 13.05);
       scene.add(gradingLight, gradingLight.target);
@@ -292,6 +292,11 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
       let authoredAssetHandle: any = null;
       let authoredAssetState = {
         ready: false,
+        loaded: [] as string[],
+        failed: [] as string[],
+      };
+      let photorealAssetState = {
+        ready: mobile || lowPower,
         loaded: [] as string[],
         failed: [] as string[],
       };
@@ -356,11 +361,11 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           camera.updateProjectionMatrix();
         }
 
-        const daylightBase = webGPUActive ? 1.01 : 0.98;
-        const daylight = daylightBase + Math.sin(cameraProgress * Math.PI) * (webGPUActive ? 0.025 : 0.035);
+        const daylightBase = mobile ? 0.98 : webGPUActive ? 0.97 : 0.95;
+        const daylight = daylightBase + Math.sin(cameraProgress * Math.PI) * (mobile ? 0.035 : 0.022);
         renderer.toneMappingExposure = daylight;
-        processLight.intensity = (mobile ? 2.5 : 4.1) + Math.sin(elapsed * 0.72) * 0.14;
-        gradingLight.intensity = (mobile ? 3.1 : 5.0) + Math.sin(elapsed * 0.55) * 0.12;
+        processLight.intensity = (mobile ? 2.5 : 3.15) + Math.sin(elapsed * 0.72) * 0.10;
+        gradingLight.intensity = (mobile ? 3.1 : 4.0) + Math.sin(elapsed * 0.55) * 0.08;
         if (scene.fog) scene.fog.density = (mobile ? 0.0118 : 0.0088) + cameraProgress * 0.00045;
 
         supplyScene.update(elapsed, cameraProgress);
@@ -451,6 +456,49 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
 
       void loadAuthoredAssets();
 
+      const loadPhotorealAssets = async () => {
+        if (mobile || lowPower) {
+          photorealAssetState = { ready: true, loaded: [], failed: [] };
+          return;
+        }
+
+        try {
+          const { installPhotorealEnvironment } = await import("@/lib/photoreal-environment");
+          const handle = await installPhotorealEnvironment(
+            THREE,
+            renderer,
+            scene,
+            supplyScene.materials,
+            { mobile, lowPower },
+          );
+
+          if (cancelled) {
+            handle.environmentTarget?.dispose?.();
+            return;
+          }
+
+          if (handle.environmentTarget) {
+            environmentTarget?.dispose?.();
+            environmentTarget = handle.environmentTarget;
+          }
+
+          photorealAssetState = {
+            ready: true,
+            loaded: handle.loaded,
+            failed: handle.failed,
+          };
+        } catch (error) {
+          console.warn("[agromont] photoreal environment unavailable; keeping procedural materials", error);
+          photorealAssetState = {
+            ready: true,
+            loaded: [],
+            failed: ["photoreal-environment"],
+          };
+        }
+
+        ensureFrame();
+      };
+
       const qaWindow = window as any;
       let gpuInfo = { vendor: "unknown", renderer: "unknown" };
       try {
@@ -477,7 +525,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           },
           snapshot() {
             return {
-              ready: markedReady && authoredAssetState.ready,
+              ready: markedReady && authoredAssetState.ready && photorealAssetState.ready,
               failed: contextLost,
               progress,
               stage: resolveStage(progress) + 1,
@@ -506,6 +554,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
               },
               gpu: { ...gpuInfo, backend: webGPUActive ? "webgpu" : "webgl2" },
               authoredAssets: authoredAssetState,
+              photorealAssets: photorealAssetState,
               timestamp: performance.now(),
             };
           },
