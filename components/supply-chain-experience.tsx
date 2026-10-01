@@ -449,8 +449,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
         ensureFrame();
       };
 
-      const authoredAssetPromise = loadAuthoredAssets();
-      if (qaMode) await authoredAssetPromise;
+      void loadAuthoredAssets();
 
       const qaWindow = window as any;
       let gpuInfo = { vendor: "unknown", renderer: "unknown" };
@@ -478,7 +477,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
           },
           snapshot() {
             return {
-              ready: markedReady,
+              ready: markedReady && authoredAssetState.ready,
               failed: contextLost,
               progress,
               stage: resolveStage(progress) + 1,
