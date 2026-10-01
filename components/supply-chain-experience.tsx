@@ -469,7 +469,7 @@ export function SupplyChainExperience({ qaMode = false }: { qaMode?: boolean } =
             renderer,
             scene,
             supplyScene.materials,
-            { mobile, lowPower },
+            { mobile, lowPower, qaMode },
           );
 
           if (cancelled) {
