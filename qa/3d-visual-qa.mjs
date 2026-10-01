@@ -230,6 +230,23 @@ for (const profile of profiles) {
         if (!Number.isFinite(snapshot.renderer?.triangles) || snapshot.renderer.triangles <= 100) {
           report.failures.push(`${profile.name}: suspiciously low triangle count at progress ${progress}`);
         }
+
+        if (!profile.isMobile) {
+          const authored = snapshot.authoredAssets;
+          if (!authored?.ready) {
+            report.failures.push(`${profile.name}: authored hero assets were not ready at progress ${progress}`);
+          }
+          if ((authored?.loaded?.length ?? 0) !== 3) {
+            report.failures.push(
+              `${profile.name}: expected 3 authored hero assets, got ${authored?.loaded?.length ?? 0} at progress ${progress}`,
+            );
+          }
+          if ((authored?.failed?.length ?? 0) > 0) {
+            report.failures.push(
+              `${profile.name}: authored hero asset failures: ${authored.failed.join(", ")}`,
+            );
+          }
+        }
       }
 
       if (previous) {
