@@ -1074,8 +1074,8 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
   const eggCount = lowPower ? 6 : mobile ? 10 : 16;
   for (let i = 0; i < eggCount; i++) {
     const egg = addShadow(new THREE.Mesh(eggGeometry, materials.egg), shadows);
-    egg.scale.setScalar(0.265);
-    egg.position.set(-3.9 + i * (7.0 / Math.max(1, eggCount - 1)), 1.46, graderZ + ((i % graderRows) - (graderRows - 1) / 2) * rowSpacing);
+    egg.scale.setScalar(0.065);
+    egg.position.set(-3.9 + i * (7.0 / Math.max(1, eggCount - 1)), 1.35, graderZ + ((i % graderRows) - (graderRows - 1) / 2) * rowSpacing);
     grader.add(egg);
     eggs.push(egg);
   }
@@ -1344,7 +1344,7 @@ export function buildSupplyChainScene(THREE: any, options: SupplySceneOptions) {
     animatedEggs.forEach((egg: any, index: number) => {
       const t = ((index / animatedEggs.length) + elapsed * 0.033) % 1;
       egg.position.x = -3.9 + t * 7.05;
-      egg.position.y = 1.46 + Math.sin(t * Math.PI * 8) * 0.012;
+      egg.position.y = 1.35 + Math.sin(t * Math.PI * 8) * 0.006;
       egg.rotation.z = t * 0.24;
     });
 
