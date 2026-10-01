@@ -22,9 +22,9 @@ async function loadTextureSet(
   repeatY: number,
 ) {
   const [basecolor, normal, roughness] = await Promise.all([
-    loader.loadAsync(`/assets/photoreal/${prefix}-basecolor.jpg`),
-    loader.loadAsync(`/assets/photoreal/${prefix}-normal.jpg`),
-    loader.loadAsync(`/assets/photoreal/${prefix}-roughness.jpg`),
+    loader.loadAsync(`/assets/photoreal/${prefix}-basecolor.ktx2`),
+    loader.loadAsync(`/assets/photoreal/${prefix}-normal.ktx2`),
+    loader.loadAsync(`/assets/photoreal/${prefix}-roughness.ktx2`),
   ]);
 
   configureTexture(THREE, basecolor, repeatX, repeatY, true);
@@ -66,7 +66,11 @@ export async function installPhotorealEnvironment(
 
   const loaded: string[] = [];
   const failed: string[] = [];
-  const textureLoader = new THREE.TextureLoader();
+  const { KTX2Loader } = await import("three/addons/loaders/KTX2Loader.js");
+  const textureLoader = new KTX2Loader()
+    .setTranscoderPath("/basis/")
+    .setWorkerLimit(2);
+  textureLoader.detectSupport(renderer);
 
   const sets = await Promise.allSettled([
     loadTextureSet(THREE, textureLoader, "concrete", 9.5, 5.0),
@@ -112,6 +116,7 @@ export async function installPhotorealEnvironment(
 
   let environmentTarget: any = null;
   if (options.qaMode) {
+    textureLoader.dispose();
     return { loaded, failed, environmentTarget };
   }
 
@@ -134,5 +139,6 @@ export async function installPhotorealEnvironment(
     failed.push("industrial-hdri");
   }
 
+  textureLoader.dispose();
   return { loaded, failed, environmentTarget };
 }
